@@ -105,10 +105,11 @@ jobs:
           pytest -v --cov=mate --cov-report=xml --cov-report=html
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run security checks
         run: |
@@ -118,7 +119,7 @@ jobs:
 
       - name: Upload test artifacts
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: |
@@ -366,7 +367,9 @@ jobs:
           echo "Smoke tests passed successfully"
 
       - name: Notify deployment success
-        if: success()
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         uses: 8398a7/action-slack@v3
         with:
           status: success
@@ -378,7 +381,9 @@ jobs:
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
       - name: Notify deployment failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         uses: 8398a7/action-slack@v3
         with:
           status: failure
