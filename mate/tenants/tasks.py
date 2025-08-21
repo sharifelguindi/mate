@@ -155,7 +155,7 @@ def cleanup_old_files(days_to_keep=90):
     Clean up old temporary files
     This is a placeholder - replace with your actual cleanup logic
     """
-    cutoff_date = timezone.now() - timedelta(days=days_to_keep)
+    timezone.now() - timedelta(days=days_to_keep)
 
     # Your cleanup logic here
     deleted_count = 0  # Replace with actual cleanup

@@ -78,7 +78,7 @@ class TestMiddlewareCeleryIntegration(TestCase):
 
         # Create a test task
         from mate.tenants.tasks import tenant_task
-        
+
         @tenant_task(bind=True)
         def test_task(self):
             tenant = get_current_tenant()
@@ -90,7 +90,7 @@ class TestMiddlewareCeleryIntegration(TestCase):
         # Make request to Hospital A subdomain
         with mock.patch("mate.tenants.tasks.TenantAwareTask.apply_async") as mock_apply:
             # Simulate a view that triggers a task
-            response = self.client.get(
+            self.client.get(
                 "/",
                 HTTP_HOST="hospital-a.testserver",
             )
@@ -129,7 +129,7 @@ class TestMiddlewareCeleryIntegration(TestCase):
         # Test Hospital A request
         from django.test import RequestFactory
         factory = RequestFactory()
-        request_a = factory.get('/', HTTP_HOST='hospital-a.testserver')
+        request_a = factory.get("/", HTTP_HOST="hospital-a.testserver")
 
         # Simulate middleware processing
         middleware = TenantMiddleware(lambda r: mock_view(r))
@@ -147,7 +147,7 @@ class TestMiddlewareCeleryIntegration(TestCase):
         execution_tenants = []
 
         from mate.tenants.tasks import tenant_task
-        
+
         @tenant_task(bind=True)
         def track_tenant_task(self):
             tenant = get_current_tenant()

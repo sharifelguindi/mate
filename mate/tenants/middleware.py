@@ -5,9 +5,7 @@ Each tenant has isolated AWS resources (RDS, S3, ElastiCache).
 import logging
 import os
 
-from django.conf import settings
 from django.http import Http404
-from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
 from .models import Tenant
@@ -23,8 +21,8 @@ class TenantMiddleware(MiddlewareMixin):
     2. Validate tenant is active in ECS deployment
     3. Validate user access to tenant
     4. Set up tenant context for the request
-    
-    Note: Each tenant has their own ECS service, so database/Redis 
+
+    Note: Each tenant has their own ECS service, so database/Redis
     connections are already configured via environment variables.
     """
 
@@ -57,7 +55,7 @@ class TenantMiddleware(MiddlewareMixin):
             # Validate user access if authenticated
             if request.user.is_authenticated:
                 self.validate_user_access(request, tenant)
-                
+
             # Log tenant access for monitoring
             logger.info(f"Tenant access: {tenant.subdomain} by user: {request.user if request.user.is_authenticated else 'anonymous'}")
         else:
@@ -75,7 +73,6 @@ class TenantMiddleware(MiddlewareMixin):
         """Log exceptions with tenant context"""
         if hasattr(request, "tenant") and request.tenant:
             logger.error(f"Exception in tenant {request.tenant.subdomain}: {exception}")
-        return None
 
     def get_tenant(self, request):
         """
@@ -95,11 +92,11 @@ class TenantMiddleware(MiddlewareMixin):
                     deployment_status="active",
                 )
             except Tenant.DoesNotExist:
-                logger.error(f"Tenant from environment not found: {env_tenant}")
+                logger.exception(f"Tenant from environment not found: {env_tenant}")
                 # This is a critical error - the ECS service is misconfigured
                 msg = "Service configuration error"
                 raise Http404(msg)
-        
+
         # 2. Check header (for API requests to shared management service)
         tenant_id = request.META.get("HTTP_X_TENANT_ID")
         if tenant_id:
@@ -167,7 +164,7 @@ class TenantMiddleware(MiddlewareMixin):
                 # Log for audit trail
                 logger.info(
                     f"HIPAA-compliant access: user={request.user.email}, "
-                    f"tenant={tenant.subdomain}, role={tenant_user.role}"
+                    f"tenant={tenant.subdomain}, role={tenant_user.role}",
                 )
 
             # Update last login

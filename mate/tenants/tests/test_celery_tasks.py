@@ -170,7 +170,8 @@ class TestTenantAwareTask(TestCase):
         task.name = "test_task"
 
         def failing_task(*args, **kwargs):
-            raise ValueError("Task failed")
+            msg = "Task failed"
+            raise ValueError(msg)
 
         task.run = failing_task
 
