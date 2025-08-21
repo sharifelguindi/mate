@@ -247,3 +247,4 @@ class TestPermissions:
         # Non-admin cannot
         with pytest.raises(PermissionDenied):
             admin_view(regular_request)
+

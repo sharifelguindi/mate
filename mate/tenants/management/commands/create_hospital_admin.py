@@ -107,3 +107,4 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"\nAccess URL: https://{tenant.subdomain}.mate.consensusai.com",
             )
+

@@ -81,3 +81,4 @@ class ExampleModel(models.Model):
         logger.info("Saving %s instance: %s", self.__class__.__name__, self.pk)
         super().save(*args, **kwargs)
         logger.info("Saved %s instance: %s", self.__class__.__name__, self.pk)
+

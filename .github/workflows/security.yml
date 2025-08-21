@@ -58,7 +58,7 @@ jobs:
         run: |
           pip install -r requirements/production.txt
           safety check --json > safety-report.json || true
-          
+
           # Parse and fail on critical vulnerabilities
           python -c "
           import json
@@ -198,7 +198,7 @@ jobs:
           pip install pip-licenses
           pip install -r requirements/production.txt
           pip-licenses --format=json --output-file=licenses.json
-          
+
           # Check for problematic licenses
           python -c "
           import json

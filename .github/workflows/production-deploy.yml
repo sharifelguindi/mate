@@ -66,7 +66,7 @@ jobs:
             echo "ECS cluster is not active. Status: $CLUSTER_STATUS"
             exit 1
           fi
-          
+
           # Check RDS status
           if [ "${{ github.event.inputs.tenant }}" == "demo" ] || [ "${{ github.event.inputs.tenant }}" == "all" ]; then
             DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier mate-demo-production-db --query 'DBInstances[0].DBInstanceStatus' --output text)
@@ -75,7 +75,7 @@ jobs:
               exit 1
             fi
           fi
-          
+
           # Check target group health
           TG_ARN=$(aws elbv2 describe-target-groups --names mate-demo-production-django --query 'TargetGroups[0].TargetGroupArn' --output text)
           HEALTHY_TARGETS=$(aws elbv2 describe-target-health --target-group-arn $TG_ARN --query 'length(TargetHealthDescriptions[?TargetHealth.State==`healthy`])' --output text)
@@ -87,14 +87,14 @@ jobs:
         if: github.event.inputs.rollback != 'true'
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          
+
           # Backup RDS
           if [ "${{ github.event.inputs.tenant }}" == "demo" ] || [ "${{ github.event.inputs.tenant }}" == "all" ]; then
             aws rds create-db-snapshot \
               --db-instance-identifier mate-demo-production-db \
               --db-snapshot-identifier mate-demo-production-backup-${TIMESTAMP}
           fi
-          
+
           # Tag current task definitions for rollback
           for service in django celery beat; do
             CURRENT_TASK_DEF=$(aws ecs describe-services \
@@ -102,7 +102,7 @@ jobs:
               --services mate-demo-production-${service} \
               --query 'services[0].taskDefinition' \
               --output text)
-            
+
             aws ecs tag-resource \
               --resource-arn $CURRENT_TASK_DEF \
               --tags key=backup-timestamp,value=${TIMESTAMP} key=backup-type,value=pre-deploy
@@ -118,7 +118,7 @@ jobs:
     strategy:
       matrix:
         service: [django, celery, beat]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -136,29 +136,29 @@ jobs:
           SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
           CLUSTER_NAME="mate-production"
           IMAGE_TAG="${{ github.event.inputs.version }}"
-          
+
           # Get current task definition
           TASK_DEF_ARN=$(aws ecs describe-services \
             --cluster $CLUSTER_NAME \
             --services $SERVICE_NAME \
             --query 'services[0].taskDefinition' \
             --output text)
-          
+
           # Download and update task definition
           aws ecs describe-task-definition \
             --task-definition $TASK_DEF_ARN \
             --query taskDefinition > task-definition.json
-          
+
           # Update image tag
           IMAGE_NAME="${{ env.ECR_REGISTRY }}/mate-${{ matrix.service == 'django' && 'web' || matrix.service }}-production"
           jq ".containerDefinitions[0].image = \"${IMAGE_NAME}:${IMAGE_TAG}\"" task-definition.json > updated-task-definition.json
-          
+
           # Register new task definition
           NEW_TASK_DEF=$(aws ecs register-task-definition \
             --cli-input-json file://updated-task-definition.json \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
-          
+
           # Update service with blue-green deployment
           aws ecs update-service \
             --cluster $CLUSTER_NAME \
@@ -172,51 +172,51 @@ jobs:
         run: |
           SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
           CLUSTER_NAME="mate-production"
-          
+
           # Get previous task definition
           PREVIOUS_TASK_DEF=$(aws ecs list-task-definitions \
             --family-prefix mate-demo-production-${{ matrix.service }} \
             --sort DESC \
             --query 'taskDefinitionArns[1]' \
             --output text)
-          
+
           if [ -z "$PREVIOUS_TASK_DEF" ]; then
             echo "No previous task definition found for rollback"
             exit 1
           fi
-          
+
           # Rollback to previous version
           aws ecs update-service \
             --cluster $CLUSTER_NAME \
             --service $SERVICE_NAME \
             --task-definition $PREVIOUS_TASK_DEF \
             --force-new-deployment
-          
+
           echo "Rolled back to: $PREVIOUS_TASK_DEF"
 
       - name: Wait for deployment
         run: |
           SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
           CLUSTER_NAME="mate-production"
-          
+
           # Wait for service to stabilize
           aws ecs wait services-stable \
             --cluster $CLUSTER_NAME \
             --services $SERVICE_NAME
-          
+
           # Verify deployment
           RUNNING_COUNT=$(aws ecs describe-services \
             --cluster $CLUSTER_NAME \
             --services $SERVICE_NAME \
             --query 'services[0].runningCount' \
             --output text)
-          
+
           DESIRED_COUNT=$(aws ecs describe-services \
             --cluster $CLUSTER_NAME \
             --services $SERVICE_NAME \
             --query 'services[0].desiredCount' \
             --output text)
-          
+
           if [ "$RUNNING_COUNT" != "$DESIRED_COUNT" ]; then
             echo "Deployment verification failed. Running: $RUNNING_COUNT, Desired: $DESIRED_COUNT"
             exit 1
@@ -237,10 +237,10 @@ jobs:
         run: |
           # Wait for services to be fully ready
           sleep 30
-          
+
           # Check application health
           URL="https://demo.mate.sociant.ai"
-          
+
           for i in {1..5}; do
             response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/health/)
             if [ "$response" == "200" ]; then
@@ -259,21 +259,21 @@ jobs:
         run: |
           # Run critical path tests
           URL="https://demo.mate.sociant.ai"
-          
+
           # Test login endpoint
           response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/api/v1/auth/login/)
           if [ "$response" != "405" ] && [ "$response" != "200" ]; then
             echo "Login endpoint check failed with status $response"
             exit 1
           fi
-          
+
           # Test API documentation
           response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/api/docs/)
           if [ "$response" != "200" ]; then
             echo "API docs check failed with status $response"
             exit 1
           fi
-          
+
           echo "Integration tests passed"
 
       - name: Check metrics
@@ -282,7 +282,7 @@ jobs:
           NAMESPACE="AWS/ECS"
           METRIC_NAME="CPUUtilization"
           CLUSTER_NAME="mate-production"
-          
+
           CPU_UTILIZATION=$(aws cloudwatch get-metric-statistics \
             --namespace $NAMESPACE \
             --metric-name $METRIC_NAME \
@@ -293,7 +293,7 @@ jobs:
             --statistics Average \
             --query 'Datapoints[0].Average' \
             --output text)
-          
+
           if (( $(echo "$CPU_UTILIZATION > 80" | bc -l) )); then
             echo "Warning: High CPU utilization detected: ${CPU_UTILIZATION}%"
           fi

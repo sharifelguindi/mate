@@ -37,3 +37,4 @@ async def application(scope, receive, send):
     else:
         msg = f"Unknown scope type {scope['type']}"
         raise NotImplementedError(msg)
+

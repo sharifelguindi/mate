@@ -41,3 +41,4 @@ app.conf.task_queues = (
 
 # Task routing is defined in settings.py
 # This allows for environment-specific configurations
+

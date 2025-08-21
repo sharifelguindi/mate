@@ -223,3 +223,4 @@ class TenantUsageMetricsAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         # Metrics are immutable
         return False
+

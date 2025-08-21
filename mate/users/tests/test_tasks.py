@@ -15,3 +15,4 @@ def test_user_count(settings):
     task_result = get_users_count.delay()
     assert isinstance(task_result, EagerResult)
     assert task_result.result == batch_size
+

@@ -325,7 +325,7 @@ CELERY_TASK_ROUTES = {
     # CPU-intensive tasks (general processing)
     "mate.provisioning.tasks.*": {"queue": "provisioning"},
     "mate.tenants.tasks.*": {"queue": "default"},
-    
+
     # You can add your app-specific routes here as you port them:
     # "your_app.tasks.*": {"queue": "your_queue"},
 }
@@ -440,3 +440,4 @@ DJANGO_VITE = {
         "static_url_prefix": "",  # Remove prefix since Vite already serves from /static/
     },
 }
+

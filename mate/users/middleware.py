@@ -42,3 +42,4 @@ class ForcePasswordChangeMiddleware(MiddlewareMixin):
         # Redirect to password change with next parameter
         next_url = request.get_full_path()
         return redirect(f"{password_change_url}?next={next_url}")
+

@@ -424,3 +424,4 @@ def document_upload_path(instance, filename):
     unique_id = str(uuid.uuid4())[:8]
 
     return f"documents/{date_path}/{doc_type}/{base_name}_{timestamp}_{unique_id}{ext}"
+

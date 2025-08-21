@@ -23,3 +23,4 @@ def merge(
 
 if __name__ == "__main__":
     merge(DOTENV_FILE, PRODUCTION_DOTENV_FILES)
+

@@ -372,3 +372,4 @@ class TestUpdateHospitalUserForm:
         tenant_user.refresh_from_db()
 
         assert tenant_user.is_active is False
+

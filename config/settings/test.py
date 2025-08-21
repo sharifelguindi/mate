@@ -40,3 +40,4 @@ MEDIA_URL = "http://media.testserver/"
 # Disable tenant middleware for tests to simplify testing
 from .base import MIDDLEWARE  # noqa: F401
 MIDDLEWARE = [m for m in MIDDLEWARE if "TenantMiddleware" not in m]
+

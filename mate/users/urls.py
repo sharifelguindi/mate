@@ -44,3 +44,4 @@ urlpatterns = [
     # Keep original user detail at the end
     path("<str:username>/", view=user_detail_view, name="detail"),
 ]
+

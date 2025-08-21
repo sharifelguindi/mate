@@ -247,3 +247,4 @@ SPECTACULAR_SETTINGS["SERVERS"] = [
 # ------------------------------------------------------------------------------
 # Disable public signup in production
 ACCOUNT_ALLOW_REGISTRATION = False
+

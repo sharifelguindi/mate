@@ -138,3 +138,4 @@ def close_tenant_connections():
     for alias in list(connections.databases.keys()):
         if alias.startswith("tenant_"):
             connections[alias].close()
+

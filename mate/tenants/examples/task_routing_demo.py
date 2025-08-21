@@ -83,3 +83,4 @@ if __name__ == "__main__":
     # This would be run in Django shell
     demonstrate_task_routing()
     show_actual_task_routing()
+

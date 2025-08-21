@@ -584,3 +584,4 @@ def send_tenant_ready_notification(tenant_id):
     # Send email to tenant owner
     # Implementation depends on your notification system
     logger.info(f"Tenant ready notification sent for: {tenant.subdomain}")
+

@@ -24,3 +24,4 @@ def clear_current_tenant():
     """Clear the current tenant from thread-local storage"""
     if hasattr(_thread_locals, "tenant"):
         del _thread_locals.tenant
+

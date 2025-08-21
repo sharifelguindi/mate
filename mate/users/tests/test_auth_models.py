@@ -103,3 +103,4 @@ class TestUserAuthModel:
         assert not user.has_usable_password()
         assert user.auth_method == "sso"
         assert user.force_password_change is False
+

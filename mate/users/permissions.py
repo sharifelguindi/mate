@@ -129,3 +129,4 @@ def get_tenant_user_or_403(request):
         msg = "No tenant access"
         raise PermissionDenied(msg)
     return request.tenant_user
+

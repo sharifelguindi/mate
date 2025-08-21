@@ -339,3 +339,4 @@ class TestQueueRouting(TestCase):
 
             # Should use original queue when no tenant
             assert mock_apply.call_args[1]["queue"] == "gpu"
+

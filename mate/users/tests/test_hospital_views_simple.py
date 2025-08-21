@@ -114,3 +114,4 @@ class TestHospitalUserViewsSimple(TestCase):
         user.refresh_from_db()
         assert not user.force_password_change
         assert user.check_password("newSecurePass123!")
+

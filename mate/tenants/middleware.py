@@ -181,3 +181,4 @@ class TenantMiddleware(MiddlewareMixin):
             )
             msg = "You don't have access to this organization"
             raise Http404(msg)
+

@@ -251,3 +251,4 @@ class HospitalUserDetailView(LoginRequiredMixin, DetailView):
 
 
 hospital_user_detail_view = HospitalUserDetailView.as_view()
+

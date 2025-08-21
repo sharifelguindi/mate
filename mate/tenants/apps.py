@@ -12,3 +12,4 @@ class TenantsConfig(AppConfig):
             import mate.tenants.signals  # noqa
         except ImportError:
             pass
+

@@ -202,3 +202,4 @@ class TestMiddlewareCeleryIntegration(TestCase):
                 actual_queue = mock_apply.call_args[1].get("queue", "default")
                 assert actual_queue == expected_queue, \
                     f"Expected {expected_queue}, got {actual_queue}"
+
