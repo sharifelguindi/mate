@@ -4,13 +4,13 @@
 
 gunicorn==23.0.0  # https://github.com/benoitc/gunicorn
 psycopg[c]==3.2.9  # https://github.com/psycopg/psycopg
-sentry-sdk==2.33.0  # https://github.com/getsentry/sentry-python
+sentry-sdk==2.35.0  # https://github.com/getsentry/sentry-python
 
 # Django
 # ------------------------------------------------------------------------------
 django-storages[s3]==1.14.6  # https://github.com/jschneier/django-storages
-django-anymail[amazon-ses]==13.0  # https://github.com/anymail/django-anymail
+django-anymail[amazon-ses]==13.0.1  # https://github.com/anymail/django-anymail
 
 # AWS CloudWatch
 # ------------------------------------------------------------------------------
-watchtower==3.3.1  # https://github.com/kislyuk/watchtower
+watchtower==3.4.0  # https://github.com/kislyuk/watchtower
