@@ -1,0 +1,419 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, dev, staging]
+    paths-ignore: ['docs/**', '*.md', '.github/workflows/ci-local.yml']
+  pull_request:
+    branches: [main, dev, staging]
+    paths-ignore: ['docs/**', '*.md', '.github/workflows/ci-local.yml']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-deploy
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  # ============================================
+  # Testing & Quality Checks
+  # ============================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/test.txt
+
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.0
+
+      - name: Run Django checks
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-ci
+          DEBUG: false
+          USE_DOCKER: "no"
+        run: |
+          python manage.py check --deploy
+          python manage.py check --database default
+
+      - name: Run migrations check
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-ci
+          USE_DOCKER: "no"
+        run: |
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-ci
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          USE_DOCKER: "no"
+        run: |
+          pytest -v --cov=mate --cov-report=xml --cov-report=html
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run security checks
+        continue-on-error: true
+        run: |
+          pip install safety bandit
+          safety check || true
+          bandit -r mate/ -f json -o bandit-report.json || true
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            htmlcov/
+            bandit-report.json
+
+  # ============================================
+  # Build Docker Images
+  # ============================================
+  build:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        service: [django, celery, beat]
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.ECR_REGISTRY }}/mate-${{ matrix.service }}-${{ github.ref_name == 'main' && 'production' || 'dev' }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.run_number }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./compose/production/django/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_ENV=${{ github.ref_name == 'main' && 'production' || github.ref_name }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ github.run_number }}
+
+  # ============================================
+  # Database Migrations
+  # ============================================
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: build
+    # Infrastructure has been created via Terraform
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migrations via ECS task
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENVIRONMENT="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            ENVIRONMENT="dev"
+          else
+            ENVIRONMENT="dev"
+          fi
+          CLUSTER_NAME="mate-${ENVIRONMENT}"
+          TASK_FAMILY="mate-demo-${ENVIRONMENT}-django"
+
+          # Run migration as one-off task
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $CLUSTER_NAME \
+            --task-definition $TASK_FAMILY \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$(aws ec2 describe-subnets --filters "Name=tag:Environment,Values=${ENVIRONMENT}" --query 'Subnets[?MapPublicIpOnLaunch==`false`].SubnetId' --output text | tr '\t' ',')],securityGroups=[$(aws ec2 describe-security-groups --filters "Name=tag:Name,Values=mate-demo-${ENVIRONMENT}-sg" --query 'SecurityGroups[0].GroupId' --output text)]}" \
+            --overrides '{"containerOverrides":[{"name":"django","command":["python","manage.py","migrate","--noinput"]}]}' \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
+          # Wait for migration to complete
+          aws ecs wait tasks-stopped --cluster $CLUSTER_NAME --tasks $TASK_ARN
+
+          # Check if migration was successful
+          EXIT_CODE=$(aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Migration completed successfully"
+
+  # ============================================
+  # Deploy to ECS
+  # ============================================
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: [build, migrate]
+    # Infrastructure has been created via Terraform
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        service: [django, celery, beat]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine environment
+        id: env
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_INPUT_ENV: ${{ github.event.inputs.environment }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "environment=$EVENT_INPUT_ENV" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download task definition
+        env:
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition mate-demo-${ENVIRONMENT}-${SERVICE} \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.service }}
+          image: ${{ env.ECR_REGISTRY }}/mate-${{ matrix.service }}-${{ steps.env.outputs.environment }}:${{ github.sha }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: mate-demo-${{ steps.env.outputs.environment }}-${{ matrix.service }}
+          cluster: mate-${{ steps.env.outputs.environment }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+      - name: Verify deployment
+        env:
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          SERVICE_NAME="mate-demo-${ENVIRONMENT}-${SERVICE}"
+          CLUSTER_NAME="mate-${ENVIRONMENT}"
+
+          # Check service status
+          DEPLOYMENT_STATUS=$(aws ecs describe-services \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
+            --query 'services[0].deployments[0].status' \
+            --output text)
+
+          if [ "$DEPLOYMENT_STATUS" != "PRIMARY" ]; then
+            echo "Deployment verification failed. Status: $DEPLOYMENT_STATUS"
+            exit 1
+          fi
+
+          echo "Deployment verified successfully"
+
+  # ============================================
+  # Smoke Tests
+  # ============================================
+  smoke-test:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: env
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_INPUT_ENV: ${{ github.event.inputs.environment }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "environment=$EVENT_INPUT_ENV" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run smoke tests
+        run: |
+          ENVIRONMENT=${{ steps.env.outputs.environment }}
+          if [ "$ENVIRONMENT" == "production" ]; then
+            URL="https://demo.mate.sociant.ai"
+          else
+            URL="https://demo-${ENVIRONMENT}.mate.sociant.ai"
+          fi
+
+          # Health check
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/health/)
+          if [ "$response" != "200" ]; then
+            echo "Health check failed with status code $response"
+            exit 1
+          fi
+
+          # API check
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/api/v1/health/)
+          if [ "$response" != "200" ]; then
+            echo "API health check failed with status code $response"
+            exit 1
+          fi
+
+          echo "Smoke tests passed successfully"
+
+      - name: Notify deployment success
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            Deployment to ${{ steps.env.outputs.environment }} completed successfully!
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Message: ${{ github.event.head_commit.message }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify deployment failure
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            Deployment to ${{ steps.env.outputs.environment }} failed!
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Please check the logs.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

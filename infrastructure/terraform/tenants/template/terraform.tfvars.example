@@ -1,0 +1,60 @@
+# UPDATE: Change to actual tenant name
+tenant_name = "TENANT_NAME"
+environment = "dev"
+
+tenant_config = {
+  # Basic identification
+  display_name = "Hospital Name"
+  subdomain    = "hospital-subdomain"
+  tier         = "standard"  # trial, standard, enterprise
+
+  # RDS Configuration
+  rds_instance_class    = "db.t4g.micro"  # ~$15/month
+  rds_allocated_storage = 20
+  rds_max_storage      = 100
+  rds_backup_retention = 7
+  rds_multi_az        = false  # true for production
+
+  # Redis Configuration
+  redis_node_type       = "cache.t4g.micro"  # ~$13/month
+  redis_num_cache_nodes = 1  # 2+ for high availability
+  redis_backup_retention = 0
+
+  # ECS Configuration
+  django_desired_count = 1
+  django_cpu          = 256
+  django_memory       = 512
+
+  celery_desired_count = 1
+  celery_cpu          = 256
+  celery_memory       = 512
+
+  # Auto-scaling
+  enable_autoscaling     = false
+  min_capacity          = 1
+  max_capacity          = 3
+  target_cpu_utilization = 75
+
+  # Storage
+  s3_versioning       = true
+  s3_lifecycle_rules  = false
+  efs_throughput_mode = "bursting"
+  max_storage_gb      = 100
+
+  # HIPAA Compliance
+  hipaa_compliant      = true
+  enable_audit_logging = true
+  enable_flow_logs     = false
+  data_retention_days  = 90  # 2555 for 7-year retention
+
+  # Identity Provider (optional)
+  identity_provider = null
+
+  # Contact Information
+  technical_contact = "it@hospital.com"
+  billing_contact   = "billing@hospital.com"
+
+  # Cost allocation
+  cost_center = "hospital"
+  department  = "it"
+}

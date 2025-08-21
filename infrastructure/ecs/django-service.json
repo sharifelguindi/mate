@@ -1,0 +1,30 @@
+{
+  "serviceName": "mate-demo-dev-django",
+  "taskDefinition": "mate-demo-dev-django:1",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-0cff745fa88d0fa5e",
+        "subnet-0a78ef5b4bb0e9b24"
+      ],
+      "securityGroups": [
+        "sg-0f5f3cd16228feb57"
+      ],
+      "assignPublicIp": "DISABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:528424611228:targetgroup/mate-demo-dev-django/8b273dfb65d3c677",
+      "containerName": "django",
+      "containerPort": 8000
+    }
+  ],
+  "healthCheckGracePeriodSeconds": 120,
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 100
+  }
+}

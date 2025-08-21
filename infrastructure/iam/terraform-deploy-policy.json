@@ -1,0 +1,34 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TerraformDeploymentPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:*",
+        "ecr:*",
+        "rds:*",
+        "elasticache:*",
+        "s3:*",
+        "iam:*",
+        "logs:*",
+        "secretsmanager:*",
+        "kms:*",
+        "cognito-idp:*",
+        "route53:*",
+        "acm:*",
+        "elasticloadbalancing:*",
+        "autoscaling:*",
+        "cloudwatch:*",
+        "sns:*",
+        "ses:*",
+        "wafv2:*",
+        "ec2:*",
+        "elasticfilesystem:*",
+        "application-autoscaling:*",
+        "dynamodb:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

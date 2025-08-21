@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Priority Worker Configuration
+# This worker handles high-priority tasks like emergency notifications
+
+echo "Starting Priority Celery Worker..."
+
+# Start worker for priority queue with higher concurrency
+celery -A config.celery_app worker \
+    --loglevel=info \
+    --queues=priority \
+    --hostname=priority@%h \
+    --concurrency=4 \
+    --prefetch-multiplier=2 \
+    --max-tasks-per-child=100 \
+    --time-limit=300 \
+    --soft-time-limit=240

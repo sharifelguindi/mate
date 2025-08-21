@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Wait for dependencies
+python << END
+import sys
+import time
+import psycopg
+
+suggest_unrecoverable_after = 30
+start = time.time()
+
+while True:
+    try:
+        psycopg.connect(
+            dbname="${POSTGRES_DB}",
+            user="${POSTGRES_USER}",
+            password="${POSTGRES_PASSWORD}",
+            host="${POSTGRES_HOST}",
+            port="${POSTGRES_PORT}",
+        )
+        break
+    except psycopg.OperationalError as error:
+        sys.stderr.write("Waiting for PostgreSQL to become available...\n")
+
+        if time.time() - start > suggest_unrecoverable_after:
+            sys.stderr.write("  This is taking longer than expected. The following exception may be indicative of an unrecoverable error: '{}'\n".format(error))
+
+    time.sleep(1)
+END
+
+>&2 echo 'PostgreSQL is available'
+
+echo "Starting Priority Celery Worker..."
+
+# Start priority worker with higher concurrency
+exec watchfiles --filter python celery.__main__.main \
+    --args '-A config.celery_app worker -l INFO -Q priority -c 4 --prefetch-multiplier=2 -n priority@%h'
