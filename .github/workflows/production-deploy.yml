@@ -1,0 +1,352 @@
+name: Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant:
+        description: 'Tenant to deploy'
+        required: true
+        type: choice
+        options:
+          - demo
+          - all
+      version:
+        description: 'Version/tag to deploy (leave empty for latest)'
+        required: false
+        default: 'latest'
+      rollback:
+        description: 'Rollback to previous version'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  # ============================================
+  # Approval Gate
+  # ============================================
+  approval:
+    name: Request Production Deployment Approval
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Request approval
+        run: |
+          echo "Production deployment requested"
+          echo "Tenant: ${{ github.event.inputs.tenant }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Rollback: ${{ github.event.inputs.rollback }}"
+
+  # ============================================
+  # Pre-deployment Checks
+  # ============================================
+  pre-deploy:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    needs: approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate infrastructure
+        run: |
+          # Check ECS cluster health
+          CLUSTER_STATUS=$(aws ecs describe-clusters --clusters mate-production --query 'clusters[0].status' --output text)
+          if [ "$CLUSTER_STATUS" != "ACTIVE" ]; then
+            echo "ECS cluster is not active. Status: $CLUSTER_STATUS"
+            exit 1
+          fi
+          
+          # Check RDS status
+          if [ "${{ github.event.inputs.tenant }}" == "demo" ] || [ "${{ github.event.inputs.tenant }}" == "all" ]; then
+            DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier mate-demo-production-db --query 'DBInstances[0].DBInstanceStatus' --output text)
+            if [ "$DB_STATUS" != "available" ]; then
+              echo "RDS instance is not available. Status: $DB_STATUS"
+              exit 1
+            fi
+          fi
+          
+          # Check target group health
+          TG_ARN=$(aws elbv2 describe-target-groups --names mate-demo-production-django --query 'TargetGroups[0].TargetGroupArn' --output text)
+          HEALTHY_TARGETS=$(aws elbv2 describe-target-health --target-group-arn $TG_ARN --query 'length(TargetHealthDescriptions[?TargetHealth.State==`healthy`])' --output text)
+          if [ "$HEALTHY_TARGETS" -lt "1" ]; then
+            echo "Warning: Less than 1 healthy target in target group"
+          fi
+
+      - name: Create backup
+        if: github.event.inputs.rollback != 'true'
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          
+          # Backup RDS
+          if [ "${{ github.event.inputs.tenant }}" == "demo" ] || [ "${{ github.event.inputs.tenant }}" == "all" ]; then
+            aws rds create-db-snapshot \
+              --db-instance-identifier mate-demo-production-db \
+              --db-snapshot-identifier mate-demo-production-backup-${TIMESTAMP}
+          fi
+          
+          # Tag current task definitions for rollback
+          for service in django celery beat; do
+            CURRENT_TASK_DEF=$(aws ecs describe-services \
+              --cluster mate-production \
+              --services mate-demo-production-${service} \
+              --query 'services[0].taskDefinition' \
+              --output text)
+            
+            aws ecs tag-resource \
+              --resource-arn $CURRENT_TASK_DEF \
+              --tags key=backup-timestamp,value=${TIMESTAMP} key=backup-type,value=pre-deploy
+          done
+
+  # ============================================
+  # Blue-Green Deployment
+  # ============================================
+  deploy:
+    name: Blue-Green Deployment
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    strategy:
+      matrix:
+        service: [django, celery, beat]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Perform deployment
+        if: github.event.inputs.rollback != 'true'
+        run: |
+          SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
+          CLUSTER_NAME="mate-production"
+          IMAGE_TAG="${{ github.event.inputs.version }}"
+          
+          # Get current task definition
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          # Download and update task definition
+          aws ecs describe-task-definition \
+            --task-definition $TASK_DEF_ARN \
+            --query taskDefinition > task-definition.json
+          
+          # Update image tag
+          IMAGE_NAME="${{ env.ECR_REGISTRY }}/mate-${{ matrix.service == 'django' && 'web' || matrix.service }}-production"
+          jq ".containerDefinitions[0].image = \"${IMAGE_NAME}:${IMAGE_TAG}\"" task-definition.json > updated-task-definition.json
+          
+          # Register new task definition
+          NEW_TASK_DEF=$(aws ecs register-task-definition \
+            --cli-input-json file://updated-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          # Update service with blue-green deployment
+          aws ecs update-service \
+            --cluster $CLUSTER_NAME \
+            --service $SERVICE_NAME \
+            --task-definition $NEW_TASK_DEF \
+            --deployment-configuration "maximumPercent=200,minimumHealthyPercent=100,deploymentCircuitBreaker={enable=true,rollback=true}" \
+            --force-new-deployment
+
+      - name: Perform rollback
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
+          CLUSTER_NAME="mate-production"
+          
+          # Get previous task definition
+          PREVIOUS_TASK_DEF=$(aws ecs list-task-definitions \
+            --family-prefix mate-demo-production-${{ matrix.service }} \
+            --sort DESC \
+            --query 'taskDefinitionArns[1]' \
+            --output text)
+          
+          if [ -z "$PREVIOUS_TASK_DEF" ]; then
+            echo "No previous task definition found for rollback"
+            exit 1
+          fi
+          
+          # Rollback to previous version
+          aws ecs update-service \
+            --cluster $CLUSTER_NAME \
+            --service $SERVICE_NAME \
+            --task-definition $PREVIOUS_TASK_DEF \
+            --force-new-deployment
+          
+          echo "Rolled back to: $PREVIOUS_TASK_DEF"
+
+      - name: Wait for deployment
+        run: |
+          SERVICE_NAME="mate-demo-production-${{ matrix.service }}"
+          CLUSTER_NAME="mate-production"
+          
+          # Wait for service to stabilize
+          aws ecs wait services-stable \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME
+          
+          # Verify deployment
+          RUNNING_COUNT=$(aws ecs describe-services \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
+            --query 'services[0].runningCount' \
+            --output text)
+          
+          DESIRED_COUNT=$(aws ecs describe-services \
+            --cluster $CLUSTER_NAME \
+            --services $SERVICE_NAME \
+            --query 'services[0].desiredCount' \
+            --output text)
+          
+          if [ "$RUNNING_COUNT" != "$DESIRED_COUNT" ]; then
+            echo "Deployment verification failed. Running: $RUNNING_COUNT, Desired: $DESIRED_COUNT"
+            exit 1
+          fi
+
+  # ============================================
+  # Post-deployment Validation
+  # ============================================
+  validate:
+    name: Post-deployment Validation
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run health checks
+        run: |
+          # Wait for services to be fully ready
+          sleep 30
+          
+          # Check application health
+          URL="https://demo.mate.sociant.ai"
+          
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/health/)
+            if [ "$response" == "200" ]; then
+              echo "Health check passed"
+              break
+            fi
+            echo "Health check attempt $i failed with status $response"
+            if [ "$i" == "5" ]; then
+              echo "Health checks failed after 5 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Run integration tests
+        run: |
+          # Run critical path tests
+          URL="https://demo.mate.sociant.ai"
+          
+          # Test login endpoint
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/api/v1/auth/login/)
+          if [ "$response" != "405" ] && [ "$response" != "200" ]; then
+            echo "Login endpoint check failed with status $response"
+            exit 1
+          fi
+          
+          # Test API documentation
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${URL}/api/docs/)
+          if [ "$response" != "200" ]; then
+            echo "API docs check failed with status $response"
+            exit 1
+          fi
+          
+          echo "Integration tests passed"
+
+      - name: Check metrics
+        run: |
+          # Check CloudWatch metrics
+          NAMESPACE="AWS/ECS"
+          METRIC_NAME="CPUUtilization"
+          CLUSTER_NAME="mate-production"
+          
+          CPU_UTILIZATION=$(aws cloudwatch get-metric-statistics \
+            --namespace $NAMESPACE \
+            --metric-name $METRIC_NAME \
+            --dimensions Name=ServiceName,Value=mate-demo-production-django Name=ClusterName,Value=$CLUSTER_NAME \
+            --start-time $(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S) \
+            --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+            --period 300 \
+            --statistics Average \
+            --query 'Datapoints[0].Average' \
+            --output text)
+          
+          if (( $(echo "$CPU_UTILIZATION > 80" | bc -l) )); then
+            echo "Warning: High CPU utilization detected: ${CPU_UTILIZATION}%"
+          fi
+
+  # ============================================
+  # Notification
+  # ============================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: validate
+    if: always()
+    steps:
+      - name: Notify success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            Production deployment completed successfully!
+            Tenant: ${{ github.event.inputs.tenant }}
+            Version: ${{ github.event.inputs.version }}
+            Deployed by: ${{ github.actor }}
+            Rollback: ${{ github.event.inputs.rollback }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            Production deployment failed!
+            Tenant: ${{ github.event.inputs.tenant }}
+            Version: ${{ github.event.inputs.version }}
+            Deployed by: ${{ github.actor }}
+            Please check the logs immediately.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Create deployment record
+        if: success()
+        run: |
+          # Log deployment to DynamoDB for audit
+          aws dynamodb put-item \
+            --table-name mate-deployments \
+            --item "{
+              \"deployment_id\": {\"S\": \"$(uuidgen)\"},
+              \"timestamp\": {\"N\": \"$(date +%s)\"},
+              \"environment\": {\"S\": \"production\"},
+              \"tenant\": {\"S\": \"${{ github.event.inputs.tenant }}\"},
+              \"version\": {\"S\": \"${{ github.event.inputs.version }}\"},
+              \"deployed_by\": {\"S\": \"${{ github.actor }}\"},
+              \"status\": {\"S\": \"success\"},
+              \"rollback\": {\"BOOL\": ${{ github.event.inputs.rollback }}},
+              \"commit_sha\": {\"S\": \"${{ github.sha }}\"}
+            }"

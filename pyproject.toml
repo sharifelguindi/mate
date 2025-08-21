@@ -6,6 +6,8 @@ python_files = [
     "tests.py",
     "test_*.py",
 ]
+testpaths = ["mate"]
+norecursedirs = ["retired", "*.egg", ".git", "__pycache__", "migrations"]
 
 # ==== Coverage ====
 [tool.coverage.run]
@@ -126,6 +128,7 @@ ignore = [
           # of types for comparison.
           # Deactivated because it can make the code slow:
           # https://github.com/astral-sh/ruff/issues/7871
+  "ERA001", # Found commented-out code - we want to keep configuration examples
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.

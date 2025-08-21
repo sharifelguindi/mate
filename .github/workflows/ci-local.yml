@@ -1,0 +1,115 @@
+name: CI - Local Docker Testing
+
+# This workflow tests the application using Docker Compose
+# It's useful for validating the local development environment
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+on:
+  pull_request:
+    branches: ['master', 'main', 'dev', 'staging']
+    paths-ignore: ['docs/**', '*.md']
+  
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-local
+  cancel-in-progress: true
+
+jobs:
+  linter:
+    name: Run Linters
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: '.python-version'
+      
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+
+  docker-compose-test:
+    name: Docker Compose Testing
+    runs-on: ubuntu-latest
+    needs: linter
+    
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and cache local backend
+        uses: docker/bake-action@v6
+        with:
+          push: false
+          load: true
+          files: docker-compose.local.yml
+          targets: django
+          set: |
+            django.cache-from=type=gha,scope=django-cached-tests
+            django.cache-to=type=gha,scope=django-cached-tests,mode=max
+            postgres.cache-from=type=gha,scope=postgres-cached-tests
+            postgres.cache-to=type=gha,scope=postgres-cached-tests,mode=max
+
+      - name: Build and cache docs
+        uses: docker/bake-action@v6
+        with:
+          push: false
+          load: true
+          files: docker-compose.docs.yml
+          set: |
+            docs.cache-from=type=gha,scope=cached-docs
+            docs.cache-to=type=gha,scope=cached-docs,mode=max
+
+      - name: Start services
+        run: |
+          docker compose -f docker-compose.local.yml up -d postgres redis
+          sleep 5  # Wait for services to be ready
+
+      - name: Check DB Migrations
+        run: |
+          docker compose -f docker-compose.local.yml run --rm django \
+            python manage.py makemigrations --check
+
+      - name: Run DB Migrations
+        run: |
+          docker compose -f docker-compose.local.yml run --rm django \
+            python manage.py migrate
+
+      - name: Run Django Tests with Coverage
+        run: |
+          docker compose -f docker-compose.local.yml run django \
+            pytest -v --cov=mate --cov-report=xml --cov-report=term
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Run Django System Checks
+        run: |
+          docker compose -f docker-compose.local.yml run --rm django \
+            python manage.py check --deploy
+
+      - name: Test Celery Worker
+        run: |
+          docker compose -f docker-compose.local.yml run --rm django \
+            celery -A config.celery_app inspect ping
+
+      - name: Validate Docker Compose Production Config
+        run: |
+          docker compose -f docker-compose.production.yml config
+
+      - name: Tear down the Stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.local.yml down -v

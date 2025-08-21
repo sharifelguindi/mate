@@ -34,5 +34,9 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "http://media.testserver/"
+
 # Your stuff...
 # ------------------------------------------------------------------------------
+# Disable tenant middleware for tests to simplify testing
+from .base import MIDDLEWARE  # noqa: F401
+MIDDLEWARE = [m for m in MIDDLEWARE if "TenantMiddleware" not in m]

@@ -36,3 +36,30 @@ logs *args:
 # manage: Executes `manage.py` command.
 manage +args:
     @docker compose run --rm django python ./manage.py {{args}}
+
+# mypy: Run type checking with mypy
+mypy *args="mate":
+    @echo "Running mypy..."
+    @docker compose run --rm django mypy {{args}}
+
+# ruff: Run linting with ruff
+ruff *args="":
+    @echo "Running ruff check..."
+    @docker compose run --rm django ruff check {{args}}
+
+# test: Run tests with pytest
+test *args:
+    @echo "Running tests..."
+    @docker compose run --rm django pytest {{args}}
+
+# coverage: Run tests with coverage and generate HTML report
+coverage *args:
+    @echo "Running tests with coverage..."
+    @docker compose run --rm django coverage run -m pytest {{args}}
+    @docker compose run --rm django coverage html
+    @echo "Coverage report generated in htmlcov/"
+    @open htmlcov/index.html
+
+# coverage-report: View coverage HTML report (macOS)
+coverage-report:
+    @open htmlcov/index.html

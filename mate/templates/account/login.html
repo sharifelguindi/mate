@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Sign In" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h1>{% trans "Sign In" %}</h1>
+            <p>
+                {% blocktrans %}If you have not created an account yet, then please
+                <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}
+            </p>
+            
+            <form method="post" action="{% url 'account_login' %}" class="login">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+                
+                <!-- Username/Email field -->
+                <div class="mb-3">
+                    <label for="id_login" class="form-label">{% trans "Username" %}</label>
+                    <input type="text" 
+                           name="login" 
+                           id="id_login" 
+                           class="form-control{% if form.login.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Username' %}" 
+                           autocomplete="username" 
+                           maxlength="150" 
+                           required 
+                           autofocus
+                           value="{{ form.login.value|default:'' }}">
+                    {% if form.login.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.login.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Password field -->
+                <div class="mb-3">
+                    <label for="id_password" class="form-label">{% trans "Password" %}</label>
+                    <input type="password" 
+                           name="password" 
+                           id="id_password" 
+                           class="form-control{% if form.password.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Password' %}" 
+                           autocomplete="current-password" 
+                           required>
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.password.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Remember me checkbox -->
+                {% if form.remember %}
+                <div class="mb-3 form-check">
+                    <input type="checkbox" 
+                           name="remember" 
+                           id="id_remember" 
+                           class="form-check-input"
+                           {% if form.remember.value %}checked{% endif %}>
+                    <label class="form-check-label" for="id_remember">
+                        {% trans "Remember Me" %}
+                    </label>
+                </div>
+                {% endif %}
+                
+                {% if redirect_field_value %}
+                    <input type="hidden" 
+                           name="{{ redirect_field_name }}" 
+                           id="id_{{ redirect_field_name }}" 
+                           value="{{ redirect_field_value }}">
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
+                    <a class="btn btn-link" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

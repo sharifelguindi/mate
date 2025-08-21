@@ -3,5 +3,13 @@
 set -o errexit
 set -o nounset
 
+# Default worker handles general queues
+# Can be overridden by WORKER_QUEUES environment variable
+QUEUES=${WORKER_QUEUES:-"default,reports,notifications"}
+CONCURRENCY=${WORKER_CONCURRENCY:-4}
+LOGLEVEL=${WORKER_LOGLEVEL:-INFO}
 
-exec watchfiles --filter python celery.__main__.main --args '-A config.celery_app worker -l INFO'
+echo "Starting Celery Worker for queues: $QUEUES"
+
+exec watchfiles --filter python celery.__main__.main \
+    --args "-A config.celery_app worker -l $LOGLEVEL -Q $QUEUES -c $CONCURRENCY"

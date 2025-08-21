@@ -1,11 +1,6 @@
 # ruff: noqa: E501
-import logging
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.integrations.redis import RedisIntegration
+# Sentry imports kept for easy switching between CloudWatch and Sentry
 
 from .base import *  # noqa: F403
 from .base import DATABASES
@@ -21,12 +16,17 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["mate.consensusai.com"])
 
+# Tenant configuration from ECS environment
+TENANT_SUBDOMAIN = env("TENANT_SUBDOMAIN", default=None)
+TENANT_NAME = env("TENANT_NAME", default=None)
+
 # DATABASES
 # ------------------------------------------------------------------------------
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 
 # CACHES
 # ------------------------------------------------------------------------------
+# ElastiCache Redis is HIPAA-compliant when encryption is enabled
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -36,6 +36,10 @@ CACHES = {
             # Mimicking memcache behavior.
             # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
             "IGNORE_EXCEPTIONS": True,
+            # Enable SSL for ElastiCache encryption in-transit
+            "CONNECTION_POOL_KWARGS": {
+                "ssl_cert_reqs": "required" if REDIS_URL.startswith("rediss://") else None,
+            },
         },
     },
 }
@@ -150,6 +154,34 @@ ANYMAIL = {}
 # See https://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 
+# CloudWatch configuration
+USE_CLOUDWATCH = env.bool("USE_CLOUDWATCH", default=True)
+CLOUDWATCH_LOG_GROUP = env("CLOUDWATCH_LOG_GROUP", default="mate-django")
+CLOUDWATCH_LOG_STREAM = env("CLOUDWATCH_LOG_STREAM", default="production")
+
+handlers = {
+    "console": {
+        "level": "DEBUG",
+        "class": "logging.StreamHandler",
+        "formatter": "verbose",
+    },
+}
+
+if USE_CLOUDWATCH:
+    # Add CloudWatch handler
+    handlers["cloudwatch"] = {
+        "level": "INFO",
+        "class": "watchtower.CloudWatchLogHandler",
+        "log_group": CLOUDWATCH_LOG_GROUP,
+        "stream_name": CLOUDWATCH_LOG_STREAM,
+        "formatter": "verbose",
+        "use_queues": False,  # Set to True for async logging
+        "create_log_group": True,
+    }
+    root_handlers = ["console", "cloudwatch"]
+else:
+    root_handlers = ["console"]
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": True,
@@ -158,51 +190,52 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
     },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-    },
-    "root": {"level": "INFO", "handlers": ["console"]},
+    "handlers": handlers,
+    "root": {"level": "INFO", "handlers": root_handlers},
     "loggers": {
         "django.db.backends": {
             "level": "ERROR",
-            "handlers": ["console"],
+            "handlers": root_handlers,
             "propagate": False,
         },
         # Errors logged by the SDK itself
         "sentry_sdk": {"level": "ERROR", "handlers": ["console"], "propagate": False},
         "django.security.DisallowedHost": {
             "level": "ERROR",
-            "handlers": ["console"],
+            "handlers": root_handlers,
+            "propagate": False,
+        },
+        # Application logs
+        "mate": {
+            "level": "INFO",
+            "handlers": root_handlers,
             "propagate": False,
         },
     },
 }
 
-# Sentry
+# Sentry (Disabled - using CloudWatch instead)
 # ------------------------------------------------------------------------------
-SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
-
-sentry_logging = LoggingIntegration(
-    level=SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
-    event_level=logging.ERROR,  # Send errors as events
-)
-integrations = [
-    sentry_logging,
-    DjangoIntegration(),
-    CeleryIntegration(),
-    RedisIntegration(),
-]
-sentry_sdk.init(
-    dsn=SENTRY_DSN,
-    integrations=integrations,
-    environment=env("SENTRY_ENVIRONMENT", default="production"),
-    traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
-)
+# Uncomment the following lines if you want to use Sentry instead of CloudWatch
+# SENTRY_DSN = env("SENTRY_DSN")
+# SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
+#
+# sentry_logging = LoggingIntegration(
+#     level=SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
+#     event_level=logging.ERROR,  # Send errors as events
+# )
+# integrations = [
+#     sentry_logging,
+#     DjangoIntegration(),
+#     CeleryIntegration(),
+#     RedisIntegration(),
+# ]
+# sentry_sdk.init(
+#     dsn=SENTRY_DSN,
+#     integrations=integrations,
+#     environment=env("SENTRY_ENVIRONMENT", default="production"),
+#     traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+# )
 
 # django-rest-framework
 # -------------------------------------------------------------------------------
@@ -212,3 +245,5 @@ SPECTACULAR_SETTINGS["SERVERS"] = [
 ]
 # Your stuff...
 # ------------------------------------------------------------------------------
+# Disable public signup in production
+ACCOUNT_ALLOW_REGISTRATION = False

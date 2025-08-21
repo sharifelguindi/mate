@@ -45,8 +45,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   libpq-dev \
   # Translations dependencies
   gettext \
-  # entrypoint
-  wait-for-it \
+  # Health check support
+  curl \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
@@ -91,8 +91,21 @@ RUN chown -R django:django ${APP_HOME}
 
 USER django
 
+# Create directories for static files and media
+RUN mkdir -p ${APP_HOME}/staticfiles ${APP_HOME}/media
+
+# Compile messages for translations
 RUN DATABASE_URL="" \
   DJANGO_SETTINGS_MODULE="config.settings.test" \
   python manage.py compilemessages
+
+# Collect static files for production
+RUN DATABASE_URL="" \
+  DJANGO_SETTINGS_MODULE="config.settings.test" \
+  python manage.py collectstatic --noinput
+
+# Health check for ECS
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8000/health/ || exit 1
 
 ENTRYPOINT ["/entrypoint"]

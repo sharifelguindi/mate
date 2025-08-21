@@ -1,0 +1,424 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VPCNetworking",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc",
+        "ec2:CreateSubnet",
+        "ec2:CreateRouteTable",
+        "ec2:CreateRoute",
+        "ec2:CreateInternetGateway",
+        "ec2:CreateNatGateway",
+        "ec2:CreateSecurityGroup",
+        "ec2:CreateTags",
+        "ec2:DeleteVpc",
+        "ec2:DeleteSubnet",
+        "ec2:DeleteRouteTable",
+        "ec2:DeleteRoute",
+        "ec2:DeleteInternetGateway",
+        "ec2:DeleteNatGateway",
+        "ec2:DeleteSecurityGroup",
+        "ec2:AllocateAddress",
+        "ec2:ReleaseAddress",
+        "ec2:AttachInternetGateway",
+        "ec2:DetachInternetGateway",
+        "ec2:AssociateRouteTable",
+        "ec2:DisassociateRouteTable",
+        "ec2:ModifyVpcAttribute",
+        "ec2:ModifySubnetAttribute",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:Describe*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECSManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:CreateCluster",
+        "ecs:CreateService",
+        "ecs:UpdateService",
+        "ecs:DeleteService",
+        "ecs:DeleteCluster",
+        "ecs:RegisterTaskDefinition",
+        "ecs:DeregisterTaskDefinition",
+        "ecs:CreateTaskSet",
+        "ecs:UpdateTaskSet",
+        "ecs:DeleteTaskSet",
+        "ecs:TagResource",
+        "ecs:UntagResource",
+        "ecs:Describe*",
+        "ecs:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:PutLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:Describe*",
+        "ecr:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RDSManagement",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBInstance",
+        "rds:CreateDBSubnetGroup",
+        "rds:CreateDBParameterGroup",
+        "rds:DeleteDBInstance",
+        "rds:DeleteDBSubnetGroup",
+        "rds:DeleteDBParameterGroup",
+        "rds:ModifyDBInstance",
+        "rds:ModifyDBSubnetGroup",
+        "rds:ModifyDBParameterGroup",
+        "rds:AddTagsToResource",
+        "rds:RemoveTagsFromResource",
+        "rds:Describe*",
+        "rds:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ElastiCacheManagement",
+      "Effect": "Allow",
+      "Action": [
+        "elasticache:CreateCacheCluster",
+        "elasticache:CreateCacheSubnetGroup",
+        "elasticache:CreateCacheParameterGroup",
+        "elasticache:CreateReplicationGroup",
+        "elasticache:DeleteCacheCluster",
+        "elasticache:DeleteCacheSubnetGroup",
+        "elasticache:DeleteCacheParameterGroup",
+        "elasticache:DeleteReplicationGroup",
+        "elasticache:ModifyCacheCluster",
+        "elasticache:ModifyCacheSubnetGroup",
+        "elasticache:ModifyCacheParameterGroup",
+        "elasticache:ModifyReplicationGroup",
+        "elasticache:AddTagsToResource",
+        "elasticache:RemoveTagsFromResource",
+        "elasticache:Describe*",
+        "elasticache:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3Management",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:PutBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:PutBucketVersioning",
+        "s3:PutBucketEncryption",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutBucketLogging",
+        "s3:PutLifecycleConfiguration",
+        "s3:PutBucketTagging",
+        "s3:GetBucket*",
+        "s3:ListBucket",
+        "s3:ListAllMyBuckets",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IAMRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:CreatePolicy",
+        "iam:DeletePolicy",
+        "iam:CreatePolicyVersion",
+        "iam:DeletePolicyVersion",
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:ListRoles",
+        "iam:ListPolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:TagRole",
+        "iam:UntagRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup",
+        "logs:Describe*",
+        "logs:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManager",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:TagResource",
+        "secretsmanager:UntagResource",
+        "secretsmanager:Describe*",
+        "secretsmanager:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "KMSKeys",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:CreateAlias",
+        "kms:DeleteAlias",
+        "kms:ScheduleKeyDeletion",
+        "kms:CancelKeyDeletion",
+        "kms:EnableKeyRotation",
+        "kms:DisableKeyRotation",
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:GenerateDataKey",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:Describe*",
+        "kms:List*",
+        "kms:Get*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CognitoUserPools",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:CreateUserPool",
+        "cognito-idp:DeleteUserPool",
+        "cognito-idp:UpdateUserPool",
+        "cognito-idp:CreateUserPoolClient",
+        "cognito-idp:DeleteUserPoolClient",
+        "cognito-idp:UpdateUserPoolClient",
+        "cognito-idp:CreateUserPoolDomain",
+        "cognito-idp:DeleteUserPoolDomain",
+        "cognito-idp:UpdateUserPoolDomain",
+        "cognito-idp:Describe*",
+        "cognito-idp:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Route53DNS",
+      "Effect": "Allow",
+      "Action": [
+        "route53:CreateHostedZone",
+        "route53:DeleteHostedZone",
+        "route53:GetHostedZone",
+        "route53:ListHostedZones",
+        "route53:ChangeResourceRecordSets",
+        "route53:GetChange",
+        "route53:ListResourceRecordSets",
+        "route53:CreateHealthCheck",
+        "route53:DeleteHealthCheck",
+        "route53:GetHealthCheck",
+        "route53:ListHealthChecks"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ACMCertificates",
+      "Effect": "Allow",
+      "Action": [
+        "acm:RequestCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "acm:AddTagsToCertificate",
+        "acm:RemoveTagsFromCertificate",
+        "acm:GetCertificate"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LoadBalancing",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:CreateLoadBalancer",
+        "elasticloadbalancing:DeleteLoadBalancer",
+        "elasticloadbalancing:CreateTargetGroup",
+        "elasticloadbalancing:DeleteTargetGroup",
+        "elasticloadbalancing:CreateListener",
+        "elasticloadbalancing:DeleteListener",
+        "elasticloadbalancing:CreateRule",
+        "elasticloadbalancing:DeleteRule",
+        "elasticloadbalancing:ModifyLoadBalancerAttributes",
+        "elasticloadbalancing:ModifyTargetGroup",
+        "elasticloadbalancing:ModifyTargetGroupAttributes",
+        "elasticloadbalancing:ModifyListener",
+        "elasticloadbalancing:ModifyRule",
+        "elasticloadbalancing:RegisterTargets",
+        "elasticloadbalancing:DeregisterTargets",
+        "elasticloadbalancing:AddTags",
+        "elasticloadbalancing:RemoveTags",
+        "elasticloadbalancing:Describe*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AutoScaling",
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:CreateAutoScalingGroup",
+        "autoscaling:DeleteAutoScalingGroup",
+        "autoscaling:UpdateAutoScalingGroup",
+        "autoscaling:CreateLaunchConfiguration",
+        "autoscaling:DeleteLaunchConfiguration",
+        "autoscaling:PutScalingPolicy",
+        "autoscaling:DeletePolicy",
+        "autoscaling:Describe*",
+        "application-autoscaling:RegisterScalableTarget",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:Describe*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchMetrics",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:ListMetrics",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:GetMetricData"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SNSNotifications",
+      "Effect": "Allow",
+      "Action": [
+        "sns:CreateTopic",
+        "sns:DeleteTopic",
+        "sns:Subscribe",
+        "sns:Unsubscribe",
+        "sns:SetTopicAttributes",
+        "sns:GetTopicAttributes",
+        "sns:ListTopics",
+        "sns:ListSubscriptions",
+        "sns:AddPermission",
+        "sns:RemovePermission",
+        "sns:TagResource",
+        "sns:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SESEmail",
+      "Effect": "Allow",
+      "Action": [
+        "ses:VerifyDomainIdentity",
+        "ses:DeleteIdentity",
+        "ses:GetIdentityVerificationAttributes",
+        "ses:PutIdentityPolicy",
+        "ses:DeleteIdentityPolicy",
+        "ses:ListIdentities",
+        "ses:GetSendQuota"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "WAFProtection",
+      "Effect": "Allow",
+      "Action": [
+        "wafv2:CreateWebACL",
+        "wafv2:DeleteWebACL",
+        "wafv2:UpdateWebACL",
+        "wafv2:AssociateWebACL",
+        "wafv2:DisassociateWebACL",
+        "wafv2:GetWebACL",
+        "wafv2:ListWebACLs",
+        "wafv2:TagResource",
+        "wafv2:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EFSFileSystem",
+      "Effect": "Allow",
+      "Action": [
+        "elasticfilesystem:CreateFileSystem",
+        "elasticfilesystem:DeleteFileSystem",
+        "elasticfilesystem:CreateMountTarget",
+        "elasticfilesystem:DeleteMountTarget",
+        "elasticfilesystem:CreateAccessPoint",
+        "elasticfilesystem:DeleteAccessPoint",
+        "elasticfilesystem:PutLifecycleConfiguration",
+        "elasticfilesystem:PutFileSystemPolicy",
+        "elasticfilesystem:TagResource",
+        "elasticfilesystem:UntagResource",
+        "elasticfilesystem:Describe*",
+        "elasticfilesystem:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DynamoDBStateLocking",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:ListTables",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:TagResource",
+        "dynamodb:UntagResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

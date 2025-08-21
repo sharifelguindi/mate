@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, E501
+# ruff: noqa: E501
 """Base settings to build other settings files upon."""
 
 import ssl
@@ -83,10 +83,13 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_spectacular",
+    "django_vite",
 ]
 
 LOCAL_APPS = [
     "mate.users",
+    "mate.tenants",
+    "mate.provisioning",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -146,6 +149,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "mate.tenants.middleware.TenantMiddleware",
+    "mate.users.middleware.ForcePasswordChangeMiddleware",
 ]
 
 # STATIC
@@ -275,6 +280,9 @@ if USE_TZ:
 CELERY_BROKER_URL = REDIS_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
+
+# Tenant Queue Isolation (False for local dev, True for production)
+USE_TENANT_QUEUE_ISOLATION = env.bool("USE_TENANT_QUEUE_ISOLATION", default=False)
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
 CELERY_RESULT_BACKEND = REDIS_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
@@ -306,6 +314,77 @@ CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-hijack-root-logger
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+
+# Celery Queue Configuration
+# ------------------------------------------------------------------------------
+# Define queues for different task types
+CELERY_TASK_ROUTES = {
+    # GPU-intensive tasks will be added when you port your apps
+    # Example: "your_app.tasks.gpu_task": {"queue": "gpu"},
+
+    # CPU-intensive tasks (general processing)
+    "mate.provisioning.tasks.*": {"queue": "provisioning"},
+    "mate.tenants.tasks.*": {"queue": "default"},
+    
+    # You can add your app-specific routes here as you port them:
+    # "your_app.tasks.*": {"queue": "your_queue"},
+}
+
+# Queue definitions with priorities
+CELERY_TASK_QUEUES = {
+    "default": {
+        "exchange": "default",
+        "exchange_type": "direct",
+        "routing_key": "default",
+    },
+    "gpu": {
+        "exchange": "gpu",
+        "exchange_type": "direct",
+        "routing_key": "gpu",
+    },
+    "priority": {
+        "exchange": "priority",
+        "exchange_type": "direct",
+        "routing_key": "priority",
+        "priority": 10,  # Higher priority
+    },
+    "provisioning": {
+        "exchange": "provisioning",
+        "exchange_type": "direct",
+        "routing_key": "provisioning",
+    },
+    "reports": {
+        "exchange": "reports",
+        "exchange_type": "direct",
+        "routing_key": "reports",
+    },
+    "notifications": {
+        "exchange": "notifications",
+        "exchange_type": "direct",
+        "routing_key": "notifications",
+    },
+}
+
+# Default queue for tasks without explicit routing
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_DEFAULT_EXCHANGE = "default"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "default"
+
+# Worker prefetch settings
+# GPU workers should process one task at a time due to memory constraints
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Task execution time limits by queue
+CELERY_TASK_TIME_LIMIT = 5 * 60  # Default 5 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 60  # Default 1 minute
+
+# Queue-specific time limits (set via task decorators)
+CELERY_QUEUE_TIME_LIMITS = {
+    "gpu": {"time_limit": 30 * 60, "soft_time_limit": 25 * 60},  # 30 min for GPU tasks
+    "provisioning": {"time_limit": 15 * 60, "soft_time_limit": 12 * 60},  # 15 min for provisioning
+    "reports": {"time_limit": 10 * 60, "soft_time_limit": 8 * 60},  # 10 min for reports
+}
+
 # django-allauth
 # ------------------------------------------------------------------------------
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
@@ -350,3 +429,14 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+# django-vite
+# ------------------------------------------------------------------------------
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": env.bool("DJANGO_VITE_DEV_MODE", default=True),
+        "dev_server_host": env("DJANGO_VITE_DEV_SERVER_HOST", default="localhost"),
+        "dev_server_port": 3000,
+        "static_url_prefix": "",  # Remove prefix since Vite already serves from /static/
+    },
+}

@@ -14,6 +14,7 @@ services:
       - postgres
       - redis
       - mailpit
+      - vite
     volumes:
       - .:/app:z
     env_file:
@@ -47,6 +48,7 @@ services:
     volumes:
       - mate_local_redis_data:/data
 
+  # Single Celery worker handling all queues
   celeryworker:
     <<: *django
     image: mate_local_celeryworker
@@ -57,6 +59,9 @@ services:
       - mailpit
     ports: []
     command: /start-celeryworker
+    environment:
+      # Single worker handles all queues in local development
+      - WORKER_QUEUES=default,gpu,priority,provisioning,reports,notifications
 
   celerybeat:
     <<: *django
@@ -76,3 +81,19 @@ services:
     ports:
       - '5555:5555'
     command: /start-flower
+    environment:
+      - FLOWER_BASIC_AUTH=admin:changeme
+
+  vite:
+    build:
+      context: .
+      dockerfile: ./compose/local/vite/Dockerfile
+    image: mate_local_vite
+    container_name: mate_local_vite
+    volumes:
+      - ./frontend:/app/frontend:z
+      - ./mate/static:/app/mate/static:z
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development

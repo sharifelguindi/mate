@@ -1,5 +1,5 @@
 
-{% load static i18n %}<!DOCTYPE html>
+{% load static i18n django_vite %}<!DOCTYPE html>
 {% get_current_language as LANGUAGE_CODE %}
 <html lang="{{ LANGUAGE_CODE }}">
   <head>
@@ -17,44 +17,26 @@
         content="Sharif Elguindi" />
   <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}" />
   {% block css %}
-    <!-- Latest compiled and minified Bootstrap CSS -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css"
-          integrity="sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=="
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer" />
-<!-- Your stuff: Third-party CSS libraries go here -->
-<!-- This file stores project-specific CSS -->
-
-  
-  <link href="{% static 'css/project.css' %}" rel="stylesheet" />
-
-
-{% endblock css %}
+    <!-- Vite HMR client for development -->
+    {% vite_hmr_client %}
+    
+    <!-- All CSS is now bundled through Vite -->
+    {% vite_asset 'main.js' %}
+    
+    <!-- Keep legacy project.css for now -->
+    <link href="{% static 'css/project.css' %}" rel="stylesheet" />
+  {% endblock css %}
 <!-- Le javascript
     ================================================== -->
 {# Placed at the top of the document so pages load faster with defer #}
 {% block javascript %}
-
-
-<!-- Bootstrap JS -->
-<script defer
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js"
-        integrity="sha512-1/RvZTcCDEUjY/CypiMz+iqqtaoQfAITmNSJY17Myp4Ms5mdxPS5UV7iOfdZoxcGhzFbOm6sntTKJppjvuhg4g=="
-        crossorigin="anonymous"
-        referrerpolicy="no-referrer"></script>
-<!-- Your stuff: Third-party javascript libraries go here -->
-
-
-<!-- place project specific Javascript in this file -->
-
-  
-  <script defer src="{% static 'js/project.js' %}"></script>
-
-
+  <!-- JavaScript is now loaded through Vite in the CSS block above -->
+  <!-- This keeps Bootstrap and all other JS bundled together -->
 {% endblock javascript %}
 </head>
-<body class="{% block bodyclass %}{% endblock bodyclass %}">
+<body class="{% block bodyclass %}{% endblock bodyclass %}" 
+      x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
+      :class="{ 'dark-mode': darkMode }">
   {% block body %}
   <div class="mb-1">
     <nav class="navbar navbar-expand-md navbar-light bg-light">
@@ -100,17 +82,42 @@
             {% endif %}
           </ul>
         </div>
+        <!-- Dark mode toggle -->
+        <button 
+          @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
+          class="dark-mode-toggle"
+          title="Toggle dark mode">
+          <!-- Moon icon -->
+          <svg x-show="!darkMode" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <!-- Sun icon -->
+          <svg x-show="darkMode" x-cloak width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
       </div>
     </nav>
   </div>
   <div class="container">
     {% if messages %}
       {% for message in messages %}
-        <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+        <div class="alert alert-dismissible {% if message.tags %}alert-{{ message.tags }}{% endif %}"
+             x-data="{ show: true }"
+             x-show="show"
+             x-transition>
           {{ message }}
           <button type="button"
                   class="btn-close"
-                  data-bs-dismiss="alert"
+                  @click="show = false"
                   aria-label="Close"></button>
         </div>
       {% endfor %}

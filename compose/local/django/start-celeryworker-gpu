@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Wait for dependencies
+python << END
+import sys
+import time
+import psycopg
+
+suggest_unrecoverable_after = 30
+start = time.time()
+
+while True:
+    try:
+        psycopg.connect(
+            dbname="${POSTGRES_DB}",
+            user="${POSTGRES_USER}",
+            password="${POSTGRES_PASSWORD}",
+            host="${POSTGRES_HOST}",
+            port="${POSTGRES_PORT}",
+        )
+        break
+    except psycopg.OperationalError as error:
+        sys.stderr.write("Waiting for PostgreSQL to become available...\n")
+
+        if time.time() - start > suggest_unrecoverable_after:
+            sys.stderr.write("  This is taking longer than expected. The following exception may be indicative of an unrecoverable error: '{}'\n".format(error))
+
+    time.sleep(1)
+END
+
+>&2 echo 'PostgreSQL is available'
+
+# GPU Worker specific configuration
+export WORKER_TYPE="gpu"
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-"0"}
+
+echo "Starting GPU Celery Worker..."
+echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
+
+# Check if we're in a GPU-enabled environment
+if command -v nvidia-smi &> /dev/null; then
+    echo "GPU detected:"
+    nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || true
+else
+    echo "No GPU detected - running in CPU simulation mode"
+fi
+
+# Start GPU worker with specific configuration
+# Lower concurrency for GPU tasks
+exec watchfiles --filter python celery.__main__.main \
+    --args '-A config.celery_app worker -l INFO -Q gpu -c 1 --prefetch-multiplier=1 -n gpu@%h'

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Provisioning Worker Configuration
+# This worker handles tenant infrastructure provisioning tasks
+
+echo "Starting Provisioning Celery Worker..."
+
+# Start worker for provisioning queue
+# Lower concurrency since these tasks create AWS resources
+celery -A config.celery_app worker \
+    --loglevel=info \
+    --queues=provisioning \
+    --hostname=provisioning@%h \
+    --concurrency=2 \
+    --prefetch-multiplier=1 \
+    --max-tasks-per-child=50 \
+    --time-limit=900 \
+    --soft-time-limit=720

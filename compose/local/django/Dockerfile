@@ -85,6 +85,19 @@ COPY ./compose/local/django/celery/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 
+# Specialized celery worker scripts - not needed for single worker setup
+# Uncomment if you want to run multiple specialized workers
+# COPY ./compose/local/django/start-celeryworker-gpu /start-celeryworker-gpu
+# RUN sed -i 's/\r$//g' /start-celeryworker-gpu
+# RUN chmod +x /start-celeryworker-gpu
+
+# COPY ./compose/local/django/start-celeryworker-priority /start-celeryworker-priority
+# RUN sed -i 's/\r$//g' /start-celeryworker-priority
+# RUN chmod +x /start-celeryworker-priority
+
+# COPY ./compose/local/django/start-celeryworker-provisioning /start-celeryworker-provisioning
+# RUN sed -i 's/\r$//g' /start-celeryworker-provisioning
+# RUN chmod +x /start-celeryworker-provisioning
 
 # copy application code to WORKDIR
 COPY . ${APP_HOME}

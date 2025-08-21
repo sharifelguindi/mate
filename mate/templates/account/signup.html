@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Sign Up" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h1>{% trans "Sign Up" %}</h1>
+            <p>
+                {% blocktrans %}Already have an account? Then please <a href="{% url 'account_login' %}">sign in</a>.{% endblocktrans %}
+            </p>
+            
+            <form method="post" action="{% url 'account_signup' %}" class="signup">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+                
+                <!-- Email field -->
+                <div class="mb-3">
+                    <label for="id_email" class="form-label">{% trans "Email address" %}</label>
+                    <input type="email" 
+                           name="email" 
+                           id="id_email" 
+                           class="form-control{% if form.email.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Email address' %}" 
+                           autocomplete="email" 
+                           required
+                           value="{{ form.email.value|default:'' }}">
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.email.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Username field -->
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">{% trans "Username" %}</label>
+                    <input type="text" 
+                           name="username" 
+                           id="id_username" 
+                           class="form-control{% if form.username.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Username' %}" 
+                           autocomplete="username" 
+                           maxlength="150" 
+                           required
+                           value="{{ form.username.value|default:'' }}">
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.username.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">{% trans "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only." %}</div>
+                </div>
+                
+                <!-- Password field -->
+                <div class="mb-3">
+                    <label for="id_password1" class="form-label">{% trans "Password" %}</label>
+                    <input type="password" 
+                           name="password1" 
+                           id="id_password1" 
+                           class="form-control{% if form.password1.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Password' %}" 
+                           autocomplete="new-password" 
+                           required>
+                    {% if form.password1.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.password1.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">{% trans "Your password must contain at least 8 characters." %}</div>
+                </div>
+                
+                <!-- Password confirmation field -->
+                <div class="mb-3">
+                    <label for="id_password2" class="form-label">{% trans "Password (again)" %}</label>
+                    <input type="password" 
+                           name="password2" 
+                           id="id_password2" 
+                           class="form-control{% if form.password2.errors %} is-invalid{% endif %}" 
+                           placeholder="{% trans 'Password (again)' %}" 
+                           autocomplete="new-password" 
+                           required>
+                    {% if form.password2.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.password2.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">{% trans "Enter the same password as before, for verification." %}</div>
+                </div>
+                
+                {% if redirect_field_value %}
+                    <input type="hidden" 
+                           name="{{ redirect_field_name }}" 
+                           id="id_{{ redirect_field_name }}" 
+                           value="{{ redirect_field_value }}">
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="submit">{% trans "Sign Up" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

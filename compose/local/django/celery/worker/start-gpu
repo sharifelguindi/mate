@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# GPU Worker Configuration
+# This worker processes GPU-intensive tasks like medical image processing and AI inference
+# In local dev, it simulates GPU processing but doesn't require actual GPU
+
+echo "Starting GPU Celery Worker..."
+
+# Check if we're in a GPU-enabled environment (for future use)
+if command -v nvidia-smi &> /dev/null; then
+    echo "GPU detected:"
+    nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+else
+    echo "No GPU detected - running in CPU simulation mode"
+fi
+
+# Start worker for GPU queue only
+# --concurrency=1 ensures only one GPU task runs at a time
+# --prefetch-multiplier=1 prevents worker from reserving multiple tasks
+celery -A config.celery_app worker \
+    --loglevel=info \
+    --queues=gpu \
+    --hostname=gpu@%h \
+    --concurrency=1 \
+    --prefetch-multiplier=1 \
+    --max-tasks-per-child=10 \
+    --time-limit=1800 \
+    --soft-time-limit=1500

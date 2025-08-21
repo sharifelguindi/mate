@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+  {% if object %}
+    {% trans "Edit User" %}
+  {% else %}
+    {% trans "Create New User" %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0">
+            {% if object %}
+              {% trans "Edit User" %}: {{ object.get_full_name|default:object.username }}
+            {% else %}
+              {% trans "Create New User" %}
+            {% endif %}
+          </h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+            
+            {{ form|crispy }}
+            
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'users:hospital_user_list' %}" class="btn btn-secondary">
+                {% trans "Cancel" %}
+              </a>
+              <button type="submit" class="btn btn-primary">
+                {% if object %}
+                  {% trans "Update User" %}
+                {% else %}
+                  {% trans "Create User" %}
+                {% endif %}
+              </button>
+            </div>
+          </form>
+          
+          {% if not object %}
+            <hr>
+            <p class="text-muted small mb-0">
+              <i class="fas fa-info-circle"></i>
+              {% trans "The user will receive an email with login instructions and will be required to set a password on first login." %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

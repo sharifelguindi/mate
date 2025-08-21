@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete User" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">{% trans "Delete User" %}</h4>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>{% trans "Warning!" %}</strong>
+            {% trans "This action cannot be undone." %}
+          </div>
+          
+          <p>
+            {% blocktrans with name=object.get_full_name|default:object.username email=object.email %}
+              Are you sure you want to delete the user <strong>{{ name }}</strong> ({{ email }})?
+            {% endblocktrans %}
+          </p>
+          
+          <p>{% trans "This will:" %}</p>
+          <ul>
+            <li>{% trans "Remove the user's access to the system" %}</li>
+            <li>{% trans "Delete all associated user data" %}</li>
+            <li>{% trans "Cannot be reversed" %}</li>
+          </ul>
+          
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'users:hospital_user_list' %}" class="btn btn-secondary">
+                {% trans "Cancel" %}
+              </a>
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> {% trans "Delete User" %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
