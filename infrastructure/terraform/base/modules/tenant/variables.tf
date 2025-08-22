@@ -29,6 +29,8 @@ variable "tenant_config" {
     celery_desired_count  = optional(number, 1)
     celery_cpu           = optional(number)
     celery_memory        = optional(number)
+    beat_cpu             = optional(number)
+    beat_memory          = optional(number)
 
     # Auto-scaling
     enable_autoscaling     = optional(bool, false)

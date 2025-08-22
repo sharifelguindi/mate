@@ -32,12 +32,12 @@ output "django_task_definition_arn" {
 
 output "celery_task_definition_arn" {
   description = "Celery task definition ARN"
-  value       = aws_ecs_task_definition.celery_bootstrap.arn
+  value       = aws_ecs_task_definition.celery.arn
 }
 
 output "beat_task_definition_arn" {
   description = "Beat task definition ARN"
-  value       = aws_ecs_task_definition.beat_bootstrap.arn
+  value       = aws_ecs_task_definition.beat.arn
 }
 
 output "django_service_name" {

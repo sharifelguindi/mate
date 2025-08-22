@@ -29,6 +29,9 @@ tenant_config = {
   celery_cpu          = 256
   celery_memory       = 512
 
+  beat_cpu    = 256
+  beat_memory = 512
+
   # No auto-scaling for demo
   enable_autoscaling = false
   enable_monitoring  = false

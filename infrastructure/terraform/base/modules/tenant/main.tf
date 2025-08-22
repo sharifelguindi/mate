@@ -13,6 +13,8 @@ locals {
       django_memory        = 512
       celery_cpu          = 256
       celery_memory       = 512
+      beat_cpu            = 256
+      beat_memory         = 512
     }
     standard = {
       rds_instance_class    = "db.t4g.medium"
@@ -21,6 +23,8 @@ locals {
       django_memory        = 1024
       celery_cpu          = 512
       celery_memory       = 1024
+      beat_cpu            = 256
+      beat_memory         = 512
     }
     enterprise = {
       rds_instance_class    = "db.r6g.xlarge"
@@ -29,6 +33,8 @@ locals {
       django_memory        = 2048
       celery_cpu          = 1024
       celery_memory       = 2048
+      beat_cpu            = 512
+      beat_memory         = 1024
     }
   }
 
