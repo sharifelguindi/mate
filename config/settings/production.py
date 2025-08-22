@@ -11,6 +11,8 @@ from .base import env
 
 # GENERAL
 # ------------------------------------------------------------------------------
+# https://docs.djangoproject.com/en/dev/ref/settings/#debug
+DEBUG = False
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
@@ -23,6 +25,7 @@ ALLOWED_HOSTS = env.list(
         "10.0.10.100",
         "10.0.20.100",
         "demo.mate.sociant.ai",
+        "*",  # Temporarily allow all for debugging
     ],
 )
 
@@ -131,6 +134,15 @@ STORAGES = {
     },
 }
 MEDIA_URL = f"https://{aws_s3_domain}/media/"
+
+# WhiteNoise configuration
+# ------------------------
+# Allow WhiteNoise to serve static files
+WHITENOISE_AUTOREFRESH = False
+WHITENOISE_USE_FINDERS = False
+WHITENOISE_MANIFEST_STRICT = False
+# Ensure static files are served from the correct URL
+STATIC_URL = "/static/"
 
 # EMAIL
 # ------------------------------------------------------------------------------

@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 
 from django.core.asgi import get_asgi_application
-from whitenoise import WhiteNoise
 
 # This allows easy placement of apps within the interior
 # mate directory.
@@ -24,13 +23,7 @@ sys.path.append(str(BASE_DIR / "mate"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 
 # This application object is used by any ASGI server configured to use this file.
-django_asgi_app = get_asgi_application()
-
-# Wrap with WhiteNoise for static file serving
-django_application = WhiteNoise(
-    django_asgi_app,
-    root=str(BASE_DIR / "staticfiles"),
-)
+django_application = get_asgi_application()
 
 # Import websocket application here, so apps from django_application are loaded first
 from config.websocket import websocket_application  # noqa: E402
