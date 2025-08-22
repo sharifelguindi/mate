@@ -302,7 +302,7 @@ aws ecs run-task \
    ```bash
    # Force unlock if locked
    terraform force-unlock <LOCK_ID>
-   
+
    # Remove resources manually if needed
    aws ecs delete-service --cluster mate-dev --service mate-demo-dev-django --force
    ```
@@ -320,7 +320,7 @@ aws ecs run-task \
    ```bash
    # Check GitHub Actions logs
    gh run view <RUN_ID> --log
-   
+
    # Check AWS credentials
    aws sts get-caller-identity
    ```

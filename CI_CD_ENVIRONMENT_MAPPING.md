@@ -40,7 +40,7 @@ dev branch     → "dev" environment
 ### Option 2: Rename Branches
 ```yaml
 # Alternative approach
-main branch       → "production" 
+main branch       → "production"
 development branch → "dev"
 # Remove staging branch entirely
 ```

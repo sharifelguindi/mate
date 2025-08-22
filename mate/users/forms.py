@@ -69,7 +69,7 @@ class FirstLoginPasswordChangeForm(forms.Form):
 
     def clean_new_password1(self):
         password = self.cleaned_data.get("new_password1")
-        
+
         if not password:
             raise ValidationError(_("Password is required."))
 

@@ -3,7 +3,7 @@
 ## What Just Happened
 ✅ Created demo tenant infrastructure in AWS:
 - RDS PostgreSQL database
-- ElastiCache Redis cluster  
+- ElastiCache Redis cluster
 - ECS task definitions (bootstrap only)
 - ALB and target groups
 - Security groups and networking
@@ -72,7 +72,7 @@ aws logs tail /ecs/mate-demo-dev/django --follow --region us-east-1
 
 The pipeline sets these automatically:
 - `DATABASE_URL` from Secrets Manager
-- `REDIS_URL` from Secrets Manager  
+- `REDIS_URL` from Secrets Manager
 - `SECRET_KEY` from Secrets Manager
 - `DJANGO_SETTINGS_MODULE=config.settings.production`
 - `AWS_STORAGE_BUCKET_NAME=mate-demo-dev-data`
