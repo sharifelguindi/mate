@@ -244,13 +244,17 @@ jobs:
 
           echo "Using image: $IMAGE"
 
-          # Download current task definition
+          # Download current task definition and clean it
           aws ecs describe-task-definition \
             --task-definition $TASK_FAMILY \
             --query taskDefinition > task-def-migration.json
 
-          # Update the image in the task definition
-          jq --arg IMAGE "$IMAGE" '.containerDefinitions[0].image = $IMAGE' task-def-migration.json > task-def-updated.json
+          # Remove fields that can't be used in register-task-definition
+          # and update the image
+          jq --arg IMAGE "$IMAGE" '
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt) |
+            .containerDefinitions[0].image = $IMAGE
+          ' task-def-migration.json > task-def-updated.json
 
           # Register the new task definition
           NEW_TASK_DEF=$(aws ecs register-task-definition \
