@@ -291,7 +291,7 @@ resource "aws_ecs_task_definition" "django" {
         },
         {
           name  = "DJANGO_ALLOWED_HOSTS"
-          value = "${var.tenant_config.subdomain}.${var.domain_name},${aws_lb.tenant.dns_name},localhost,127.0.0.1,10.0.10.100,10.0.20.100"
+          value = "*"
         },
         {
           name  = "COGNITO_DOMAIN"
@@ -320,6 +320,10 @@ resource "aws_ecs_task_definition" "django" {
         {
           name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
           value = ""
+        },
+        {
+          name  = "DJANGO_ADMIN_URL"
+          value = "admin/"
         }
       ]
 
@@ -507,7 +511,7 @@ resource "aws_ecs_task_definition" "celery" {
         },
         {
           name  = "DJANGO_ALLOWED_HOSTS"
-          value = "${var.tenant_config.subdomain}.${var.domain_name},${aws_lb.tenant.dns_name},localhost,127.0.0.1,10.0.10.100,10.0.20.100"
+          value = "*"
         },
         {
           name  = "COGNITO_DOMAIN"
@@ -536,6 +540,10 @@ resource "aws_ecs_task_definition" "celery" {
         {
           name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
           value = ""
+        },
+        {
+          name  = "DJANGO_ADMIN_URL"
+          value = "admin/"
         }
       ]
 
@@ -707,7 +715,7 @@ resource "aws_ecs_task_definition" "beat" {
         },
         {
           name  = "DJANGO_ALLOWED_HOSTS"
-          value = "${var.tenant_config.subdomain}.${var.domain_name},${aws_lb.tenant.dns_name},localhost,127.0.0.1,10.0.10.100,10.0.20.100"
+          value = "*"
         },
         {
           name  = "COGNITO_DOMAIN"
@@ -736,6 +744,10 @@ resource "aws_ecs_task_definition" "beat" {
         {
           name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
           value = ""
+        },
+        {
+          name  = "DJANGO_ADMIN_URL"
+          value = "admin/"
         }
       ]
 

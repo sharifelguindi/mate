@@ -51,6 +51,15 @@ resource "aws_security_group" "tenant" {
   description = "Security group for ${var.tenant_name} services"
   vpc_id      = var.vpc_id
 
+  # Allow inbound traffic from ALB
+  ingress {
+    from_port       = 8000
+    to_port         = 8000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+    description     = "Allow traffic from ALB"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -187,8 +196,8 @@ resource "aws_lb_target_group" "django" {
     enabled             = true
     healthy_threshold   = 2
     interval            = 30
-    matcher             = "200"
-    path                = "/health/"
+    matcher             = "200,301,302"
+    path                = "/admin/"
     port                = "traffic-port"
     protocol            = "HTTP"
     timeout             = 5
