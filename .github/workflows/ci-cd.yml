@@ -214,34 +214,75 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Run migrations via ECS task
+        env:
+          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # Determine environment
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             ENVIRONMENT="production"
-          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            BRANCH="main"
+          elif [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
             ENVIRONMENT="dev"
+            BRANCH="staging"
+          elif [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
+            ENVIRONMENT="dev"
+            BRANCH="dev"
           else
             ENVIRONMENT="dev"
+            BRANCH="${GITHUB_REF#refs/heads/}"
           fi
+          
           CLUSTER_NAME="mate-${ENVIRONMENT}"
           TASK_FAMILY="mate-demo-${ENVIRONMENT}-django"
-
-          # Run migration as one-off task
+          
+          # Calculate image tag to match what was pushed
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          IMAGE_TAG="${BRANCH}-${SHORT_SHA}"
+          IMAGE="${ECR_REGISTRY}/mate-django-${ENVIRONMENT}:${IMAGE_TAG}"
+          
+          echo "Using image: $IMAGE"
+          
+          # Download current task definition
+          aws ecs describe-task-definition \
+            --task-definition $TASK_FAMILY \
+            --query taskDefinition > task-def-migration.json
+          
+          # Update the image in the task definition
+          jq --arg IMAGE "$IMAGE" '.containerDefinitions[0].image = $IMAGE' task-def-migration.json > task-def-updated.json
+          
+          # Register the new task definition
+          NEW_TASK_DEF=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def-updated.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          echo "Registered new task definition: $NEW_TASK_DEF"
+          
+          # Run migration with the updated task definition
           TASK_ARN=$(aws ecs run-task \
             --cluster $CLUSTER_NAME \
-            --task-definition $TASK_FAMILY \
+            --task-definition $NEW_TASK_DEF \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[$(aws ec2 describe-subnets --filters "Name=tag:Environment,Values=${ENVIRONMENT}" --query 'Subnets[?MapPublicIpOnLaunch==`false`].SubnetId' --output text | tr '\t' ',')],securityGroups=[$(aws ec2 describe-security-groups --filters "Name=tag:Name,Values=mate-demo-${ENVIRONMENT}-sg" --query 'SecurityGroups[0].GroupId' --output text)]}" \
             --overrides '{"containerOverrides":[{"name":"django","command":["python","manage.py","migrate","--noinput"]}]}' \
             --query 'tasks[0].taskArn' \
             --output text)
-
+          
+          echo "Started migration task: $TASK_ARN"
+          
           # Wait for migration to complete
           aws ecs wait tasks-stopped --cluster $CLUSTER_NAME --tasks $TASK_ARN
-
+          
           # Check if migration was successful
           EXIT_CODE=$(aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
           if [ "$EXIT_CODE" != "0" ]; then
             echo "Migration failed with exit code $EXIT_CODE"
+            # Get logs for debugging
+            TASK_ID="${TASK_ARN##*/}"
+            echo "Checking logs for task $TASK_ID..."
+            aws logs tail /ecs/mate-${ENVIRONMENT}/django --since 5m || true
             exit 1
           fi
           echo "Migration completed successfully"
