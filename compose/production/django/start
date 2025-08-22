@@ -4,7 +4,19 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+# Log environment for debugging
+echo "Starting Django with environment:"
+echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
+echo "DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-not set}"
 
-python /app/manage.py collectstatic --noinput
+# Run collectstatic with verbosity
+python /app/manage.py collectstatic --noinput -v 2
 
-exec /usr/local/bin/gunicorn config.asgi --bind 0.0.0.0:8000 --chdir=/app -k uvicorn_worker.UvicornWorker
+# Add more logging to gunicorn
+exec /usr/local/bin/gunicorn config.asgi \
+    --bind 0.0.0.0:8000 \
+    --chdir=/app \
+    -k uvicorn_worker.UvicornWorker \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info
