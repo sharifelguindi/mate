@@ -282,6 +282,10 @@ resource "aws_ecs_task_definition" "django" {
           value = aws_s3_bucket.tenant_data.bucket
         },
         {
+          name  = "DJANGO_AWS_STORAGE_BUCKET_NAME"
+          value = aws_s3_bucket.tenant_data.bucket
+        },
+        {
           name  = "AWS_S3_REGION_NAME"
           value = var.aws_region
         },
@@ -494,6 +498,10 @@ resource "aws_ecs_task_definition" "celery" {
           value = aws_s3_bucket.tenant_data.bucket
         },
         {
+          name  = "DJANGO_AWS_STORAGE_BUCKET_NAME"
+          value = aws_s3_bucket.tenant_data.bucket
+        },
+        {
           name  = "AWS_S3_REGION_NAME"
           value = var.aws_region
         },
@@ -687,6 +695,10 @@ resource "aws_ecs_task_definition" "beat" {
         },
         {
           name  = "AWS_STORAGE_BUCKET_NAME"
+          value = aws_s3_bucket.tenant_data.bucket
+        },
+        {
+          name  = "DJANGO_AWS_STORAGE_BUCKET_NAME"
           value = aws_s3_bucket.tenant_data.bucket
         },
         {
