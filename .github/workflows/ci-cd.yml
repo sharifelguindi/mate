@@ -313,11 +313,11 @@ jobs:
           else
             BRANCH="${GITHUB_REF#refs/heads/}"
           fi
-          
+
           # Use short SHA (7 chars) to match metadata-action format
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           IMAGE_TAG="${BRANCH}-${SHORT_SHA}"
-          
+
           echo "Image tag: $IMAGE_TAG"
           echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
