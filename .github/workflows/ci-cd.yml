@@ -233,33 +233,33 @@ jobs:
             ENVIRONMENT="dev"
             BRANCH="${GITHUB_REF#refs/heads/}"
           fi
-          
+
           CLUSTER_NAME="mate-${ENVIRONMENT}"
           TASK_FAMILY="mate-demo-${ENVIRONMENT}-django"
-          
+
           # Calculate image tag to match what was pushed
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           IMAGE_TAG="${BRANCH}-${SHORT_SHA}"
           IMAGE="${ECR_REGISTRY}/mate-django-${ENVIRONMENT}:${IMAGE_TAG}"
-          
+
           echo "Using image: $IMAGE"
-          
+
           # Download current task definition
           aws ecs describe-task-definition \
             --task-definition $TASK_FAMILY \
             --query taskDefinition > task-def-migration.json
-          
+
           # Update the image in the task definition
           jq --arg IMAGE "$IMAGE" '.containerDefinitions[0].image = $IMAGE' task-def-migration.json > task-def-updated.json
-          
+
           # Register the new task definition
           NEW_TASK_DEF=$(aws ecs register-task-definition \
             --cli-input-json file://task-def-updated.json \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
-          
+
           echo "Registered new task definition: $NEW_TASK_DEF"
-          
+
           # Run migration with the updated task definition
           TASK_ARN=$(aws ecs run-task \
             --cluster $CLUSTER_NAME \
@@ -269,12 +269,12 @@ jobs:
             --overrides '{"containerOverrides":[{"name":"django","command":["python","manage.py","migrate","--noinput"]}]}' \
             --query 'tasks[0].taskArn' \
             --output text)
-          
+
           echo "Started migration task: $TASK_ARN"
-          
+
           # Wait for migration to complete
           aws ecs wait tasks-stopped --cluster $CLUSTER_NAME --tasks $TASK_ARN
-          
+
           # Check if migration was successful
           EXIT_CODE=$(aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
           if [ "$EXIT_CODE" != "0" ]; then
