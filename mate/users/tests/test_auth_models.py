@@ -32,6 +32,7 @@ class TestUserAuthModel:
         )
 
         old_timestamp = user.password_changed_at
+        assert old_timestamp is not None  # Ensure it's set initially
 
         # Wait a bit to ensure timestamp difference
         import time  # noqa: PLC0415
@@ -41,6 +42,7 @@ class TestUserAuthModel:
         user.set_password("newpass123!@#")
         user.save()
 
+        assert user.password_changed_at is not None
         assert user.password_changed_at > old_timestamp
         assert user.force_password_change is False
 

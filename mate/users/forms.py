@@ -23,7 +23,7 @@ class UserAdminCreationForm(admin_forms.AdminUserCreationForm):
 
     class Meta(admin_forms.AdminUserCreationForm.Meta):  # type: ignore[name-defined]
         model = User
-        fields = (*admin_forms.AdminUserCreationForm.Meta.fields, "email", "groups")
+        fields = (*admin_forms.AdminUserCreationForm.Meta.fields, "email", "groups")  # type: ignore[attr-defined]
         error_messages = {
             "username": {"unique": _("This username has already been taken.")},
         }
@@ -69,6 +69,9 @@ class FirstLoginPasswordChangeForm(forms.Form):
 
     def clean_new_password1(self):
         password = self.cleaned_data.get("new_password1")
+        
+        if not password:
+            raise ValidationError(_("Password is required."))
 
         # Custom password validation for medical environment
         min_password_length = 12
