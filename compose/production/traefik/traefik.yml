@@ -30,17 +30,39 @@ certificatesResolvers:
 
 http:
   routers:
+    # Router for localhost/127.0.0.1 (local development)
+    web-local-router:
+      rule: 'Host(`localhost`) || Host(`127.0.0.1`)'
+      entryPoints:
+        - web-secure
+      middlewares:
+        - csrf
+        - websocket-headers
+      service: django
+      tls: {}  # Use default self-signed cert
+
+    # Router for production domain
     web-secure-router:
       rule: 'Host(`mate.consensusai.com`)'
       entryPoints:
         - web-secure
       middlewares:
         - csrf
+        - websocket-headers
       service: django
       tls:
         # https://doc.traefik.io/traefik/routing/routers/#certresolver
         certResolver: letsencrypt
 
+    # Flower router for localhost
+    flower-local-router:
+      rule: 'Host(`localhost`) || Host(`127.0.0.1`)'
+      entryPoints:
+        - flower
+      service: flower
+      tls: {}  # Use default self-signed cert
+
+    # Flower router for production
     flower-secure-router:
       rule: 'Host(`mate.consensusai.com`)'
       entryPoints:
@@ -56,6 +78,14 @@ http:
       # https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
       headers:
         hostsProxyHeaders: ['X-CSRFToken']
+
+    websocket-headers:
+      # Headers for WebSocket support
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Forwarded-Proto: "https"
 
   services:
     django:

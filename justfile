@@ -124,3 +124,50 @@ prod-migrate:
 prod-collectstatic:
     @echo "Collecting static files for production..."
     @COMPOSE_FILE=docker-compose.production.yml docker compose run --rm django python manage.py collectstatic --noinput
+
+# pre-deploy-checks: Run all checks before deployment
+pre-deploy-checks:
+    @echo "Running pre-deployment checks..."
+    @echo "1. Running pre-commit hooks..."
+    @pre-commit run --all-files || (echo "❌ Pre-commit checks failed!" && exit 1)
+    @echo "✅ Pre-commit checks passed"
+    @echo ""
+    @echo "2. Running mypy type checking..."
+    @just mypy || (echo "❌ Type checking failed!" && exit 1)
+    @echo "✅ Type checking passed"
+    @echo ""
+    @echo "3. Running ruff linting..."
+    @just ruff || (echo "❌ Linting failed!" && exit 1)
+    @echo "✅ Linting passed"
+    @echo ""
+    @echo "4. Running tests..."
+    @just test || (echo "❌ Tests failed!" && exit 1)
+    @echo "✅ All tests passed"
+    @echo ""
+    @echo "🎉 All pre-deployment checks passed!"
+
+# deploy: Run all checks and deploy to production
+deploy branch="main":
+    @echo "🚀 Starting production deployment process..."
+    @echo ""
+    @# Run all pre-deployment checks
+    @just pre-deploy-checks
+    @echo ""
+    @echo "5. Checking git status..."
+    @git status --porcelain | grep -q . && (echo "❌ Uncommitted changes detected! Please commit or stash them first." && exit 1) || echo "✅ Working directory clean"
+    @echo ""
+    @echo "6. Fetching latest changes..."
+    @git fetch origin
+    @echo ""
+    @echo "7. Creating deployment commit..."
+    @git add -A
+    @git diff --staged --quiet || (git commit -m "chore: Production deployment $(date +%Y-%m-%d)" && echo "✅ Changes committed")
+    @echo ""
+    @echo "8. Pushing to {{branch}} branch..."
+    @git push origin HEAD:{{branch}} || (echo "❌ Push failed!" && exit 1)
+    @echo ""
+    @echo "✅ Deployment initiated! Check GitHub Actions for progress:"
+    @echo "   https://github.com/your-org/mate/actions"
+    @echo ""
+    @echo "📊 Monitor deployment:"
+    @echo "   aws ecs list-tasks --cluster mate-cluster --service-name mate-demo-django"

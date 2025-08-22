@@ -1,7 +1,7 @@
 # ruff: noqa: E501
+import re
 
 # Sentry imports kept for easy switching between CloudWatch and Sentry
-
 from .base import *  # noqa: F403
 from .base import BASE_DIR
 from .base import DATABASES
@@ -131,7 +131,9 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Use CompressedStaticFilesStorage instead of CompressedManifestStaticFilesStorage
+        # to avoid double-hashing Vite's already-hashed files
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 MEDIA_URL = f"https://{aws_s3_domain}/media/"
@@ -145,6 +147,43 @@ WHITENOISE_MANIFEST_STRICT = False
 # Ensure static files are served from the correct URL
 STATIC_URL = "/static/"
 
+
+# Configure WhiteNoise to recognize Vite's hash pattern as immutable
+# This prevents WhiteNoise from adding its own hash to already-hashed Vite files
+def immutable_file_test(path, url):
+    # Match Vite/Rollup-generated hashes (e.g., main-DGDc5AeB.css)
+    # This pattern matches files with 8-12 character hashes before the extension
+    return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
+
+
+WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+
+# Skip compression for Vite files as they're already optimized
+WHITENOISE_SKIP_COMPRESS_EXTENSIONS = (
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "zip",
+    "gz",
+    "tgz",
+    "bz2",
+    "tbz",
+    "xz",
+    "br",
+    "apk",
+    "dmg",
+    "iso",
+    "jar",
+    "rar",
+    "tar",
+    "zip",
+    "webm",
+    "woff",
+    "woff2",
+)
+
 # Django Vite configuration
 # ------------------------
 # Disable Vite dev mode in production - use built static files
@@ -154,7 +193,7 @@ DJANGO_VITE = {
             "DJANGO_VITE_DEV_MODE",
             default=False,
         ),  # Default to False in production
-        "static_url_prefix": "",
+        "static_url_prefix": "vite",  # Add vite prefix to match the output directory
         "manifest_path": str(BASE_DIR / "staticfiles" / "vite" / "manifest.json"),
     },
 }
