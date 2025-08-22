@@ -3,6 +3,7 @@
 # Sentry imports kept for easy switching between CloudWatch and Sentry
 
 from .base import *  # noqa: F403
+from .base import BASE_DIR
 from .base import DATABASES
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
@@ -151,6 +152,7 @@ DJANGO_VITE = {
     "default": {
         "dev_mode": env.bool("DJANGO_VITE_DEV_MODE", default=False),  # Default to False in production
         "static_url_prefix": "",
+        "manifest_path": str(BASE_DIR / "staticfiles" / "vite" / "manifest.json"),
     },
 }
 

@@ -102,13 +102,14 @@ COPY --chown=django:django . ${APP_HOME}
 # make django owner of the WORKDIR directory as well.
 RUN chown -R django:django ${APP_HOME}
 
-USER django
-
 # Create directories for static files and media
 RUN mkdir -p ${APP_HOME}/staticfiles ${APP_HOME}/media
 
-# Build frontend assets with Vite
+# Build frontend assets with Vite (as root to avoid npm permission issues)
 RUN cd ${APP_HOME}/frontend && npm install && npm run build
+
+# Switch to django user after building
+USER django
 
 # Compile messages for translations
 RUN DATABASE_URL="" \

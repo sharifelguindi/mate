@@ -435,5 +435,6 @@ DJANGO_VITE = {
         "dev_server_host": env("DJANGO_VITE_DEV_SERVER_HOST", default="localhost"),
         "dev_server_port": 3000,
         "static_url_prefix": "",  # Remove prefix since Vite already serves from /static/
+        "manifest_path": str(BASE_DIR / "staticfiles" / "vite" / "manifest.json"),
     },
 }

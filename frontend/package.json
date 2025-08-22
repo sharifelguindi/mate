@@ -16,6 +16,10 @@
     "alpinejs": "^3.14.8"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-arm64-musl": "^4.28.1"
+    "@rollup/rollup-linux-arm64-musl": "^4.28.1",
+    "@rollup/rollup-linux-arm64-gnu": "^4.28.1",
+    "@rollup/rollup-linux-x64-musl": "^4.28.1",
+    "@rollup/rollup-linux-x64-gnu": "^4.28.1",
+    "@rollup/rollup-darwin-arm64": "^4.28.1"
   }
 }
