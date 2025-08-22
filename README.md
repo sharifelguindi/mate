@@ -254,6 +254,62 @@ Once everything is running:
 
 For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
 
+## Testing Production Locally
+
+Run a production-like environment locally to test production builds and configurations:
+
+### Setup Production Environment
+
+```bash
+# First time setup - copy production env templates
+just prod-setup
+
+# Edit the environment files with your settings
+# .envs/.production/.django
+# .envs/.production/.postgres
+```
+
+### Production Commands
+
+| Command | Description |
+|---------|-------------|
+| `just prod-local` | Build and start production environment |
+| `just prod-build` | Build production Docker images |
+| `just prod-up` | Start production containers |
+| `just prod-down` | Stop production containers |
+| `just prod-logs [service]` | View production logs |
+| `just prod-ps` | Show container status |
+| `just prod-shell` | Open shell in Django container |
+| `just prod-manage <cmd>` | Run Django management command |
+| `just prod-migrate` | Run database migrations |
+| `just prod-collectstatic` | Collect static files |
+| `just prod-clean` | Remove containers and volumes |
+
+### Example Production Workflow
+
+```bash
+# Initial setup
+just prod-setup
+# Edit .envs/.production/.django and .postgres with your settings
+
+# Start production environment
+just prod-local
+
+# Run migrations
+just prod-migrate
+
+# Create superuser
+just prod-manage createsuperuser
+
+# View logs
+just prod-logs django
+
+# Stop everything
+just prod-down
+```
+
+**Note**: The production environment uses Traefik as a reverse proxy and will run on ports 80/443. Make sure these ports are available.
+
 ## Troubleshooting
 
 ### Common Issues

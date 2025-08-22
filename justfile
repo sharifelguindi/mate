@@ -63,3 +63,64 @@ coverage *args:
 # coverage-report: View coverage HTML report (macOS)
 coverage-report:
     @open htmlcov/index.html
+
+# prod-local: Run production-like environment locally
+prod-local:
+    @echo "Starting production-like environment locally..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose up -d --build
+
+# prod-build: Build production images
+prod-build:
+    @echo "Building production images..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose build
+
+# prod-up: Start production containers
+prod-up:
+    @echo "Starting production containers..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose up -d
+
+# prod-down: Stop production containers
+prod-down:
+    @echo "Stopping production containers..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose down
+
+# prod-logs: View production container logs
+prod-logs *args:
+    @COMPOSE_FILE=docker-compose.production.yml docker compose logs -f {{args}}
+
+# prod-ps: Show production container status
+prod-ps:
+    @COMPOSE_FILE=docker-compose.production.yml docker compose ps
+
+# prod-clean: Stop and remove production containers and volumes
+prod-clean:
+    @echo "Cleaning production containers and volumes..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose down -v
+
+# prod-setup: Setup production environment files from examples
+prod-setup:
+    @echo "Setting up production environment files..."
+    @test -f .envs/.production/.django || cp .envs/.production/.django.example .envs/.production/.django
+    @test -f .envs/.production/.postgres || cp .envs/.production/.postgres.example .envs/.production/.postgres
+    @echo "Production environment files ready. Please edit them with your settings."
+    @echo "Files to configure:"
+    @echo "  - .envs/.production/.django"
+    @echo "  - .envs/.production/.postgres"
+
+# prod-shell: Open shell in production Django container
+prod-shell:
+    @COMPOSE_FILE=docker-compose.production.yml docker compose exec django /bin/bash
+
+# prod-manage: Run Django management command in production
+prod-manage +args:
+    @COMPOSE_FILE=docker-compose.production.yml docker compose run --rm django python manage.py {{args}}
+
+# prod-migrate: Run migrations in production environment
+prod-migrate:
+    @echo "Running migrations in production environment..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose run --rm django python manage.py migrate
+
+# prod-collectstatic: Collect static files for production
+prod-collectstatic:
+    @echo "Collecting static files for production..."
+    @COMPOSE_FILE=docker-compose.production.yml docker compose run --rm django python manage.py collectstatic --noinput
