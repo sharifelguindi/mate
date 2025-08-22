@@ -12,11 +12,21 @@ echo "DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-not set}"
 # Run collectstatic with verbosity
 python /app/manage.py collectstatic --noinput -v 2
 
+# Test if the application can be imported
+echo "Testing application import..."
+python -c "from config.asgi import application; print('ASGI application imported successfully')"
+
 # Add more logging to gunicorn
-exec /usr/local/bin/gunicorn config.asgi \
+exec /usr/local/bin/gunicorn config.asgi:application \
     --bind 0.0.0.0:8000 \
     --chdir=/app \
     -k uvicorn_worker.UvicornWorker \
+    --workers 1 \
+    --timeout 120 \
+    --graceful-timeout 120 \
+    --keep-alive 75 \
     --access-logfile - \
     --error-logfile - \
-    --log-level info
+    --log-level debug \
+    --capture-output \
+    --enable-stdio-inheritance

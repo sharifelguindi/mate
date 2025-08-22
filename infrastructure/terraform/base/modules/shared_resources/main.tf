@@ -35,11 +35,18 @@ resource "aws_security_group" "internal" {
     self        = true
   }
 
+  # Allow all egress - required for:
+  # - Pulling Docker images from ECR
+  # - Accessing AWS services (S3, SES, etc.)
+  # - External API calls
+  # - Package downloads during builds
+  # Note: Consider using VPC endpoints for AWS services to reduce exposure
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic for AWS services and external APIs"
   }
 
   tags = {
@@ -107,11 +114,18 @@ resource "aws_security_group" "efs" {
     security_groups = [aws_security_group.internal.id]
   }
 
+  # Allow all egress - required for:
+  # - Pulling Docker images from ECR
+  # - Accessing AWS services (S3, SES, etc.)
+  # - External API calls
+  # - Package downloads during builds
+  # Note: Consider using VPC endpoints for AWS services to reduce exposure
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic for AWS services and external APIs"
   }
 
   tags = {

@@ -111,7 +111,7 @@ module "ecs_cluster" {
   environment = var.environment
   kms_key_id  = aws_kms_key.main.id
 
-  enable_container_insights = var.environment == "production"
+  enable_container_insights = true  # Enable for all environments for better monitoring
 }
 
 # ECR Repositories

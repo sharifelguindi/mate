@@ -20,14 +20,14 @@ tenant_config = {
   redis_num_cache_nodes = 1
   redis_backup_retention = 0
 
-  # Minimal ECS containers
+  # ECS containers with adequate resources
   django_desired_count = 1
-  django_cpu          = 256
-  django_memory       = 512
+  django_cpu          = 1024
+  django_memory       = 2048
 
   celery_desired_count = 1
-  celery_cpu          = 256
-  celery_memory       = 512
+  celery_cpu          = 512
+  celery_memory       = 1024
 
   beat_cpu    = 256
   beat_memory = 512
