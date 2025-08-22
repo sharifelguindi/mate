@@ -308,6 +308,14 @@ resource "aws_ecs_task_definition" "django" {
         {
           name  = "CLOUDWATCH_LOG_STREAM"
           value = var.tenant_name
+        },
+        {
+          name  = "DJANGO_AWS_ACCESS_KEY_ID"
+          value = ""
+        },
+        {
+          name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
+          value = ""
         }
       ]
 
@@ -512,6 +520,14 @@ resource "aws_ecs_task_definition" "celery" {
         {
           name  = "CLOUDWATCH_LOG_STREAM"
           value = var.tenant_name
+        },
+        {
+          name  = "DJANGO_AWS_ACCESS_KEY_ID"
+          value = ""
+        },
+        {
+          name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
+          value = ""
         }
       ]
 
@@ -700,6 +716,14 @@ resource "aws_ecs_task_definition" "beat" {
         {
           name  = "CLOUDWATCH_LOG_STREAM"
           value = var.tenant_name
+        },
+        {
+          name  = "DJANGO_AWS_ACCESS_KEY_ID"
+          value = ""
+        },
+        {
+          name  = "DJANGO_AWS_SECRET_ACCESS_KEY"
+          value = ""
         }
       ]
 
