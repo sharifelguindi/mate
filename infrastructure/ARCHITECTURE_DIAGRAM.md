@@ -24,7 +24,7 @@ graph TB
             ACM[ACM SSL Certificate]
             S3State[S3 Terraform State]
         end
-        
+
         subgraph "Regional Resources"
             subgraph "Networking"
                 VPC[VPC - 10.0.0.0/16]
@@ -35,22 +35,22 @@ graph TB
                 VPC --> PrivSub2[Private Subnet AZ2]
                 VPC --> PrivSub3[Private Subnet AZ3]
             end
-            
+
             subgraph "Compute"
                 ECS[ECS Cluster<br/>mate-dev]
             end
-            
+
             subgraph "Container Registry"
                 ECR1[ECR: mate-django-dev]
                 ECR2[ECR: mate-celery-dev]
                 ECR3[ECR: mate-beat-dev]
             end
-            
+
             subgraph "Security"
                 WAF[AWS WAF]
                 Cognito[Cognito User Pool]
             end
-            
+
             subgraph "Shared Storage"
                 SharedEFS[Shared EFS<br/>ML Models]
             end
@@ -79,13 +79,13 @@ graph TB
             ALB[Application Load Balancer]
             ALB --> TG[Target Group<br/>Health: /admin/]
         end
-        
+
         subgraph "ECS Services in Cluster"
             TG --> Django[Django Service<br/>Task: 256 CPU/512 MB]
             Celery[Celery Service<br/>Task: 256 CPU/512 MB]
             Beat[Beat Service<br/>Task: 256 CPU/512 MB]
         end
-        
+
         subgraph "Data Layer"
             Django --> RDS[RDS PostgreSQL<br/>db.t4g.micro]
             Django --> Redis[ElastiCache Redis<br/>cache.t4g.micro]
@@ -93,7 +93,7 @@ graph TB
             Celery --> Redis
             Beat --> Redis
         end
-        
+
         subgraph "Storage"
             Django --> S3[S3: mate-demo-dev-data]
             Django --> EFS1[EFS: Tenant Data]
@@ -101,7 +101,7 @@ graph TB
             Celery --> EFS1
             Celery --> EFS2
         end
-        
+
         subgraph "Secrets"
             Django --> SM1[Secrets Manager<br/>Django Secrets]
             Django --> SM2[Secrets Manager<br/>DB Credentials]
@@ -111,14 +111,14 @@ graph TB
             Beat --> SM2
             Beat --> SM3
         end
-        
+
         subgraph "Monitoring"
             Django --> CW1[CloudWatch Logs<br/>/ecs/mate-demo-dev/django]
             Celery --> CW2[CloudWatch Logs<br/>/ecs/mate-demo-dev/celery]
             Beat --> CW3[CloudWatch Logs<br/>/ecs/mate-demo-dev/beat]
         end
     end
-    
+
     Internet[Internet] --> ALB
     ALB --> Route53Record[demo.mate.sociant.ai]
 ```
@@ -144,7 +144,7 @@ graph LR
         ALB --> SG1[ALB Security Group<br/>Ingress: 80, 443]
         SG1 --> SG2[ECS Security Group<br/>Ingress: 8000 from ALB only]
         SG2 --> Container[ECS Container]
-        
+
         Container --> SG3[RDS Security Group<br/>Ingress: 5432 from ECS]
         Container --> SG4[Redis Security Group<br/>Ingress: 6379 from ECS]
         Container --> SG5[EFS Security Group<br/>Ingress: 2049 from ECS]
@@ -175,13 +175,13 @@ graph LR
         Migrate --> Deploy[Update ECS Services]
         Deploy --> Health[Health Checks]
     end
-    
+
     subgraph "Terraform Managed"
         TF1[Task Definitions]
         TF2[ECS Services]
         TF3[Infrastructure]
     end
-    
+
     Deploy --> TF1
     Deploy --> TF2
 ```
@@ -235,7 +235,7 @@ sequenceDiagram
     participant Terraform
     participant AWS
     participant CICD as CI/CD
-    
+
     Admin->>Terraform: Create tenant config
     Terraform->>AWS: Provision ALB
     Terraform->>AWS: Create RDS instance

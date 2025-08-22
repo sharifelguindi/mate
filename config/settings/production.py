@@ -150,7 +150,9 @@ STATIC_URL = "/static/"
 # Disable Vite dev mode in production - use built static files
 DJANGO_VITE = {
     "default": {
-        "dev_mode": env.bool("DJANGO_VITE_DEV_MODE", default=False),  # Default to False in production
+        "dev_mode": env.bool(
+            "DJANGO_VITE_DEV_MODE", default=False
+        ),  # Default to False in production
         "static_url_prefix": "",
         "manifest_path": str(BASE_DIR / "staticfiles" / "vite" / "manifest.json"),
     },
