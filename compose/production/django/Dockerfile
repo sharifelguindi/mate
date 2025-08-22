@@ -108,6 +108,9 @@ RUN mkdir -p ${APP_HOME}/staticfiles ${APP_HOME}/media
 # Build frontend assets with Vite (as root to avoid npm permission issues)
 RUN cd ${APP_HOME}/frontend && npm install && npm run build
 
+# Ensure django user owns all directories before switching
+RUN chown -R django:django ${APP_HOME}/staticfiles ${APP_HOME}/media
+
 # Switch to django user after building
 USER django
 
