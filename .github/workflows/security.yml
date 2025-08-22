@@ -77,7 +77,7 @@ jobs:
                       vulnerabilities = report['vulnerabilities']
                   else:
                       vulnerabilities = report if isinstance(report, list) else []
-                  
+
                   critical = [v for v in vulnerabilities if v.get('severity', '').lower() == 'critical']
                   if critical:
                       print(f'Found {len(critical)} critical vulnerabilities')
