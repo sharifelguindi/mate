@@ -144,6 +144,16 @@ WHITENOISE_MANIFEST_STRICT = False
 # Ensure static files are served from the correct URL
 STATIC_URL = "/static/"
 
+# Django Vite configuration
+# ------------------------
+# Disable Vite dev mode in production - use built static files
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": False,  # MUST be False in production
+        "static_url_prefix": "",
+    },
+}
+
 # EMAIL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email

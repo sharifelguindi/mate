@@ -89,6 +89,13 @@ RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower
 
 
+# Install Node.js for building frontend assets
+USER root
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+  && apt-get install -y nodejs \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && rm -rf /var/lib/apt/lists/*
+
 # copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}
 
@@ -100,14 +107,18 @@ USER django
 # Create directories for static files and media
 RUN mkdir -p ${APP_HOME}/staticfiles ${APP_HOME}/media
 
+# Build frontend assets with Vite
+RUN cd ${APP_HOME}/frontend && npm install && npm run build
+
 # Compile messages for translations
 RUN DATABASE_URL="" \
   DJANGO_SETTINGS_MODULE="config.settings.test" \
   python manage.py compilemessages
 
-# Collect static files for production
+# Collect static files for production (including Vite built assets)
 RUN DATABASE_URL="" \
   DJANGO_SETTINGS_MODULE="config.settings.test" \
+  DJANGO_VITE_DEV_MODE=False \
   python manage.py collectstatic --noinput
 
 # Health check for ECS
