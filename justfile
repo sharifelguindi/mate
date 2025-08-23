@@ -125,9 +125,10 @@ prod-collectstatic:
     @echo "Collecting static files for production..."
     @COMPOSE_FILE=docker-compose.production.yml docker compose run --rm django python manage.py collectstatic --noinput
 
-# pre-deploy-checks: Run all checks before deployment
-pre-deploy-checks:
-    @echo "Running pre-deployment checks..."
+# pre-deploy: Run all checks and prepare for deployment (no commit)
+pre-deploy:
+    @echo "🔍 Running pre-deployment checks..."
+    @echo ""
     @echo "1. Running pre-commit hooks..."
     @pre-commit run --all-files || (echo "❌ Pre-commit checks failed!" && exit 1)
     @echo "✅ Pre-commit checks passed"
@@ -144,26 +145,77 @@ pre-deploy-checks:
     @just test || (echo "❌ Tests failed!" && exit 1)
     @echo "✅ All tests passed"
     @echo ""
-    @echo "🎉 All pre-deployment checks passed!"
-
-# deploy: Run all checks and deploy to production
-deploy branch="main":
-    @echo "🚀 Starting production deployment process..."
+    @echo "5. Checking for uncommitted changes..."
+    @if git status --porcelain | grep -q .; then \
+        echo "⚠️  Uncommitted changes detected:"; \
+        git status --short; \
+        echo ""; \
+        echo "These changes will need to be committed before deployment."; \
+    else \
+        echo "✅ Working directory clean"; \
+    fi
     @echo ""
-    @# Run all pre-deployment checks
-    @just pre-deploy-checks
-    @echo ""
-    @echo "5. Checking git status..."
-    @git status --porcelain | grep -q . && (echo "❌ Uncommitted changes detected! Please commit or stash them first." && exit 1) || echo "✅ Working directory clean"
-    @echo ""
-    @echo "6. Fetching latest changes..."
+    @echo "6. Fetching latest from origin..."
     @git fetch origin
     @echo ""
-    @echo "7. Creating deployment commit..."
-    @git add -A
-    @git diff --staged --quiet || (git commit -m "chore: Production deployment $(date +%Y-%m-%d)" && echo "✅ Changes committed")
+    @echo "🎉 All pre-deployment checks passed!"
     @echo ""
-    @echo "8. Pushing to {{branch}} branch..."
+    @echo "Ready for deployment. Run 'just deploy' to commit and push."
+
+# deploy: Commit changes and deploy to production (interactive)
+deploy:
+    @echo "🚀 Starting production deployment..."
+    @echo ""
+    @# Check if there are changes to commit
+    @if git status --porcelain | grep -q .; then \
+        echo "📝 Uncommitted changes detected:"; \
+        echo ""; \
+        git status --short; \
+        echo ""; \
+        read -p "Enter commit message (or press Enter for default): " msg; \
+        if [ -z "$$msg" ]; then \
+            msg="chore: Production deployment $$(date +%Y-%m-%d)"; \
+        fi; \
+        git add -A; \
+        git commit -m "$$msg" || (echo "❌ Commit failed!" && exit 1); \
+        echo "✅ Changes committed"; \
+    else \
+        echo "✅ No uncommitted changes"; \
+    fi
+    @echo ""
+    @read -p "Enter target branch (default: main): " branch; \
+    if [ -z "$$branch" ]; then \
+        branch="main"; \
+    fi; \
+    echo "Pushing to $$branch branch..."; \
+    git push origin HEAD:$$branch || (echo "❌ Push failed!" && exit 1)
+    @echo ""
+    @echo "✅ Deployment initiated! Check GitHub Actions for progress:"
+    @echo "   https://github.com/your-org/mate/actions"
+    @echo ""
+    @echo "📊 Monitor deployment:"
+    @echo "   aws ecs list-tasks --cluster mate-cluster --service-name mate-demo-django"
+
+# deploy-force: Deploy with specific branch and message (non-interactive)
+deploy-force branch="main" message="":
+    @echo "🚀 Starting production deployment to {{branch}}..."
+    @echo ""
+    @# Check if there are changes to commit
+    @if git status --porcelain | grep -q .; then \
+        if [ -z "{{message}}" ]; then \
+            msg="chore: Production deployment $$(date +%Y-%m-%d)"; \
+        else \
+            msg="{{message}}"; \
+        fi; \
+        echo "📝 Committing changes: $$msg"; \
+        git add -A; \
+        git commit -m "$$msg" || (echo "❌ Commit failed!" && exit 1); \
+        echo "✅ Changes committed"; \
+    else \
+        echo "✅ No uncommitted changes"; \
+    fi
+    @echo ""
+    @echo "Pushing to {{branch}} branch..."
     @git push origin HEAD:{{branch}} || (echo "❌ Push failed!" && exit 1)
     @echo ""
     @echo "✅ Deployment initiated! Check GitHub Actions for progress:"

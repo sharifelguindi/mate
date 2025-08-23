@@ -10,11 +10,11 @@ terraform {
 
   # Each tenant has its own state file
   backend "s3" {
-    bucket         = "mate-terraform-state-528424611228"
-    key            = "tenants/demo/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "mate-terraform-locks"
+    bucket      = "mate-terraform-state-528424611228"
+    key         = "tenants/demo/terraform.tfstate"
+    region      = "us-east-1"
+    encrypt     = true
+    use_lockfile = true
   }
 }
 

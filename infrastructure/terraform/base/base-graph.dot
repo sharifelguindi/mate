@@ -1,0 +1,97 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "data.aws_availability_zones.available" [label="data.aws_availability_zones.available"];
+  "data.aws_caller_identity.current" [label="data.aws_caller_identity.current"];
+  "data.aws_route53_zone.main" [label="data.aws_route53_zone.main"];
+  "aws_acm_certificate.main" [label="aws_acm_certificate.main"];
+  "aws_acm_certificate_validation.main" [label="aws_acm_certificate_validation.main"];
+  "aws_kms_alias.main" [label="aws_kms_alias.main"];
+  "aws_kms_key.main" [label="aws_kms_key.main"];
+  "aws_route53_record.cert_validation" [label="aws_route53_record.cert_validation"];
+  "aws_route53_zone.main" [label="aws_route53_zone.main"];
+  subgraph "cluster_module.cognito" {
+    label = "module.cognito"
+    fontname = "sans-serif"
+    "module.cognito.aws_cognito_user_pool.main" [label="aws_cognito_user_pool.main"];
+    "module.cognito.aws_cognito_user_pool_client.main" [label="aws_cognito_user_pool_client.main"];
+    "module.cognito.aws_cognito_user_pool_domain.main" [label="aws_cognito_user_pool_domain.main"];
+  }
+  subgraph "cluster_module.ecr" {
+    label = "module.ecr"
+    fontname = "sans-serif"
+    "module.ecr.data.aws_region.current" [label="data.aws_region.current"];
+    "module.ecr.aws_ecr_lifecycle_policy.repos" [label="aws_ecr_lifecycle_policy.repos"];
+    "module.ecr.aws_ecr_repository.repos" [label="aws_ecr_repository.repos"];
+  }
+  subgraph "cluster_module.ecs_cluster" {
+    label = "module.ecs_cluster"
+    fontname = "sans-serif"
+    "module.ecs_cluster.aws_ecs_cluster.main" [label="aws_ecs_cluster.main"];
+    "module.ecs_cluster.aws_ecs_cluster_capacity_providers.main" [label="aws_ecs_cluster_capacity_providers.main"];
+  }
+  subgraph "cluster_module.shared_resources" {
+    label = "module.shared_resources"
+    fontname = "sans-serif"
+    "module.shared_resources.aws_cloudwatch_log_group.ecs" [label="aws_cloudwatch_log_group.ecs"];
+    "module.shared_resources.aws_db_subnet_group.shared" [label="aws_db_subnet_group.shared"];
+    "module.shared_resources.aws_efs_file_system.shared_models" [label="aws_efs_file_system.shared_models"];
+    "module.shared_resources.aws_efs_mount_target.shared_models" [label="aws_efs_mount_target.shared_models"];
+    "module.shared_resources.aws_elasticache_subnet_group.shared" [label="aws_elasticache_subnet_group.shared"];
+    "module.shared_resources.aws_security_group.efs" [label="aws_security_group.efs"];
+    "module.shared_resources.aws_security_group.internal" [label="aws_security_group.internal"];
+  }
+  subgraph "cluster_module.vpc" {
+    label = "module.vpc"
+    fontname = "sans-serif"
+    "module.vpc.aws_eip.nat" [label="aws_eip.nat"];
+    "module.vpc.aws_internet_gateway.main" [label="aws_internet_gateway.main"];
+    "module.vpc.aws_nat_gateway.main" [label="aws_nat_gateway.main"];
+    "module.vpc.aws_route_table.private" [label="aws_route_table.private"];
+    "module.vpc.aws_route_table.public" [label="aws_route_table.public"];
+    "module.vpc.aws_route_table_association.private" [label="aws_route_table_association.private"];
+    "module.vpc.aws_route_table_association.public" [label="aws_route_table_association.public"];
+    "module.vpc.aws_subnet.private" [label="aws_subnet.private"];
+    "module.vpc.aws_subnet.public" [label="aws_subnet.public"];
+    "module.vpc.aws_vpc.main" [label="aws_vpc.main"];
+  }
+  subgraph "cluster_module.waf" {
+    label = "module.waf"
+    fontname = "sans-serif"
+    "module.waf.aws_wafv2_web_acl.main" [label="aws_wafv2_web_acl.main"];
+  }
+  "aws_acm_certificate_validation.main" -> "aws_route53_record.cert_validation";
+  "aws_kms_alias.main" -> "aws_kms_key.main";
+  "aws_kms_key.main" -> "data.aws_caller_identity.current";
+  "aws_route53_record.cert_validation" -> "data.aws_route53_zone.main";
+  "aws_route53_record.cert_validation" -> "aws_acm_certificate.main";
+  "aws_route53_record.cert_validation" -> "aws_route53_zone.main";
+  "module.cognito.aws_cognito_user_pool_client.main" -> "module.cognito.aws_cognito_user_pool.main";
+  "module.cognito.aws_cognito_user_pool_domain.main" -> "module.cognito.aws_cognito_user_pool.main";
+  "module.ecr.aws_ecr_lifecycle_policy.repos" -> "module.ecr.aws_ecr_repository.repos";
+  "module.ecr.aws_ecr_repository.repos" -> "aws_kms_key.main";
+  "module.ecs_cluster.aws_ecs_cluster_capacity_providers.main" -> "module.ecs_cluster.aws_ecs_cluster.main";
+  "module.shared_resources.aws_cloudwatch_log_group.ecs" -> "aws_kms_key.main";
+  "module.shared_resources.aws_db_subnet_group.shared" -> "module.vpc.aws_subnet.private";
+  "module.shared_resources.aws_efs_file_system.shared_models" -> "aws_kms_key.main";
+  "module.shared_resources.aws_efs_mount_target.shared_models" -> "module.shared_resources.aws_efs_file_system.shared_models";
+  "module.shared_resources.aws_efs_mount_target.shared_models" -> "module.shared_resources.aws_security_group.efs";
+  "module.shared_resources.aws_efs_mount_target.shared_models" -> "module.vpc.aws_subnet.private";
+  "module.shared_resources.aws_elasticache_subnet_group.shared" -> "module.vpc.aws_subnet.private";
+  "module.shared_resources.aws_security_group.efs" -> "module.shared_resources.aws_security_group.internal";
+  "module.shared_resources.aws_security_group.internal" -> "module.vpc.aws_vpc.main";
+  "module.vpc.aws_internet_gateway.main" -> "module.vpc.aws_vpc.main";
+  "module.vpc.aws_nat_gateway.main" -> "module.vpc.aws_eip.nat";
+  "module.vpc.aws_nat_gateway.main" -> "module.vpc.aws_internet_gateway.main";
+  "module.vpc.aws_nat_gateway.main" -> "module.vpc.aws_subnet.public";
+  "module.vpc.aws_route_table.private" -> "module.vpc.aws_nat_gateway.main";
+  "module.vpc.aws_route_table.public" -> "module.vpc.aws_internet_gateway.main";
+  "module.vpc.aws_route_table_association.private" -> "module.vpc.aws_route_table.private";
+  "module.vpc.aws_route_table_association.private" -> "module.vpc.aws_subnet.private";
+  "module.vpc.aws_route_table_association.public" -> "module.vpc.aws_route_table.public";
+  "module.vpc.aws_route_table_association.public" -> "module.vpc.aws_subnet.public";
+  "module.vpc.aws_subnet.private" -> "data.aws_availability_zones.available";
+  "module.vpc.aws_subnet.private" -> "module.vpc.aws_vpc.main";
+  "module.vpc.aws_subnet.public" -> "data.aws_availability_zones.available";
+  "module.vpc.aws_subnet.public" -> "module.vpc.aws_vpc.main";
+}

@@ -1,6 +1,6 @@
-# MATE Healthcare Platform
+# MATE - Mentored AI Transformer Environment
 
-Multi-tenant AI-powered healthcare platform with complete AWS infrastructure isolation for HIPAA compliance.
+AI-assisted 3D segmentation application for Radiation Oncology Workflows
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)

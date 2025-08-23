@@ -29,10 +29,23 @@ resource "aws_ecr_lifecycle_policy" "repos" {
     rules = [
       {
         rulePriority = 1
-        description  = "Keep last 10 images"
+        description  = "Keep last 20 dev images"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = ["v"]
+          tagPrefixList = ["dev-", "develop-"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 20
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Keep last 10 staging images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["staging-", "stage-"]
           countType     = "imageCountMoreThan"
           countNumber   = 10
         }
@@ -41,13 +54,39 @@ resource "aws_ecr_lifecycle_policy" "repos" {
         }
       },
       {
-        rulePriority = 2
+        rulePriority = 3
+        description  = "Keep last 30 production images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["main-", "production-", "prod-", "v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 30
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 4
         description  = "Remove untagged images after 7 days"
         selection = {
           tagStatus   = "untagged"
           countType   = "sinceImagePushed"
           countUnit   = "days"
           countNumber = 7
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 5
+        description  = "Remove old images after 90 days"
+        selection = {
+          tagStatus   = "any"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 90
         }
         action = {
           type = "expire"

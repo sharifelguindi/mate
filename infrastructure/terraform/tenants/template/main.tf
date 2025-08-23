@@ -10,11 +10,11 @@ terraform {
 
   # UPDATE: Change TENANT_NAME to actual tenant name
   backend "s3" {
-    bucket         = "mate-terraform-state-528424611228"
-    key            = "tenants/TENANT_NAME/terraform.tfstate"  # UPDATE THIS
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "mate-terraform-locks"
+    bucket      = "mate-terraform-state-528424611228"
+    key         = "tenants/TENANT_NAME/terraform.tfstate"  # UPDATE THIS
+    region      = "us-east-1"
+    encrypt     = true
+    use_lockfile = true
   }
 }
 
