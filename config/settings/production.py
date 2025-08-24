@@ -69,7 +69,8 @@ USE_X_FORWARDED_HOST = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-x-forwarded-port
 USE_X_FORWARDED_PORT = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+# Disabled because ALB handles SSL termination and health checks use HTTP
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
 SESSION_COOKIE_SECURE = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
