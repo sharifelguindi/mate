@@ -41,6 +41,11 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 # CACHES
 # ------------------------------------------------------------------------------
 # ElastiCache Redis is HIPAA-compliant when encryption is enabled
+# Build connection pool kwargs conditionally
+CONNECTION_POOL_KWARGS = {}
+if REDIS_URL.startswith("rediss://"):
+    CONNECTION_POOL_KWARGS["ssl_cert_reqs"] = "required"
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -51,11 +56,7 @@ CACHES = {
             # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
             "IGNORE_EXCEPTIONS": True,
             # Enable SSL for ElastiCache encryption in-transit
-            "CONNECTION_POOL_KWARGS": {
-                "ssl_cert_reqs": "required"
-                if REDIS_URL.startswith("rediss://")
-                else None,
-            },
+            "CONNECTION_POOL_KWARGS": CONNECTION_POOL_KWARGS,
         },
     },
 }
@@ -88,6 +89,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://demo.mate.sociant.ai",
     "https://mate.consensusai.com",
     "https://*.mate.sociant.ai",  # Allow all subdomains
+    "https://localhost",  # For local production testing
+    "https://127.0.0.1",  # For local production testing
 ]
 # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
