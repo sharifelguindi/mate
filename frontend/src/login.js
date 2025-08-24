@@ -4,7 +4,7 @@ import './styles/login.css'
 // Login page functionality
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-    
+
     if (loginForm) {
         // Add loading state to form submission
         loginForm.addEventListener('submit', function(e) {
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.disabled = true;
             }
         });
-        
+
         // Re-enable button if form submission fails (browser validation)
         loginForm.addEventListener('invalid', function() {
             const button = this.querySelector('.btn-primary');
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, true);
     }
-    
+
     // Auto-remove any error messages after 5 seconds
     const alerts = document.querySelectorAll('.alert');
     if (alerts.length > 0) {
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }, 5000);
     }
-    
+
     // Focus on first input field if no errors
     const firstInput = document.querySelector('.form-input:not(.is-invalid)');
     if (firstInput && !document.querySelector('.alert')) {

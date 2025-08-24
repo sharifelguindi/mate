@@ -192,10 +192,9 @@ deploy type message branch="dev":
         echo ""; \
         git status --short; \
         echo ""; \
-        msg="{{type}}: {{message}}"; \
-        echo "📝 Committing: $$msg"; \
+        echo "📝 Committing: {{type}}: {{message}}"; \
         git add -A; \
-        git commit -m "$$msg" || (echo "❌ Commit failed!" && exit 1); \
+        git commit -m "{{type}}: {{message}}" || (echo "❌ Commit failed!" && exit 1); \
         echo "✅ Changes committed"; \
     else \
         echo "✅ No uncommitted changes"; \
