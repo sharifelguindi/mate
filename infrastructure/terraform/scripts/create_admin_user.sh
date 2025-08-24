@@ -31,7 +31,7 @@ if command -v aws &> /dev/null; then
         --secret-id "${SECRET_NAME}" \
         --secret-string "{\"username\":\"${ADMIN_USERNAME}\",\"password\":\"${PASSWORD}\"}" \
         --region "${AWS_REGION}"
-    
+
     echo "Password stored in AWS Secrets Manager: ${SECRET_NAME}"
 fi
 

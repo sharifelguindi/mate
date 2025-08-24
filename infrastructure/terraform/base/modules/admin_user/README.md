@@ -16,7 +16,7 @@ This module handles the secure creation of initial admin users for MATE tenants.
 ```hcl
 module "admin_user" {
   source = "./modules/admin_user"
-  
+
   tenant_name       = "hospital-a"
   environment       = "production"
   admin_username    = "admin"

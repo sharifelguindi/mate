@@ -2,6 +2,7 @@
 Management command to create an initial admin user for a tenant.
 This is designed to be used during deployment/provisioning.
 """
+
 import secrets
 import string
 
@@ -107,12 +108,13 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(
                         self.style.WARNING(
-                            "\n" + "="*50 + "\n"
+                            "\n" + "=" * 50 + "\n"
                             "IMPORTANT: Save this password securely!\n"
                             f"Username: {username}\n"
                             f"Password: {password}\n"
                             "User will be forced to change password on first login.\n"
-                            + "="*50,
+                            + "="
+                            * 50,
                         ),
                     )
 
