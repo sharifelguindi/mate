@@ -37,6 +37,14 @@ logs *args:
 manage +args:
     @docker compose run --rm django python ./manage.py {{args}}
 
+# create-admin: Create an initial admin user for a tenant
+create-admin username email:
+    @echo "Creating admin user: {{username}}"
+    @docker compose run --rm django python ./manage.py create_tenant_admin \
+        --username {{username}} \
+        --email {{email}} \
+        --force-password-change
+
 # mypy: Run type checking with mypy
 mypy *args="mate":
     @echo "Running mypy..."
@@ -129,16 +137,16 @@ prod-collectstatic:
 pre-deploy:
     @echo "🔍 Running pre-deployment checks..."
     @echo ""
-    @echo "1. Running pre-commit hooks..."
-    @pre-commit run --all-files || (echo "❌ Pre-commit checks failed!" && exit 1)
+    @echo "1. Running pre-commit hooks with auto-fix..."
+    @pre-commit run --all-files || pre-commit run --all-files || (echo "❌ Pre-commit checks failed after auto-fix!" && exit 1)
     @echo "✅ Pre-commit checks passed"
     @echo ""
     @echo "2. Running mypy type checking..."
     @just mypy || (echo "❌ Type checking failed!" && exit 1)
     @echo "✅ Type checking passed"
     @echo ""
-    @echo "3. Running ruff linting..."
-    @just ruff || (echo "❌ Linting failed!" && exit 1)
+    @echo "3. Running ruff linting with auto-fix..."
+    @just ruff --fix || just ruff || (echo "❌ Linting failed!" && exit 1)
     @echo "✅ Linting passed"
     @echo ""
     @echo "4. Running tests..."

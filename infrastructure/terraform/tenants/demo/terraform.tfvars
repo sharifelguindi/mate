@@ -55,6 +55,10 @@ tenant_config = {
   technical_contact = "admin@sociant.ai"
   billing_contact   = "admin@sociant.ai"
 
+  # Admin user configuration
+  admin_email    = "admin@demo.mate.sociant.ai"
+  admin_username = "admin"
+
   # Cost tracking
   cost_center = "sandbox"
   department  = "demo"

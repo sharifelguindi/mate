@@ -14,10 +14,12 @@ class HealthCheckView(View):
 
     def get(self, request):
         """Return a simple 200 OK response."""
-        return JsonResponse({
-            "status": "healthy",
-            "service": "mate",
-        })
+        return JsonResponse(
+            {
+                "status": "healthy",
+                "service": "mate",
+            },
+        )
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -56,4 +58,3 @@ class DetailedHealthCheckView(View):
         # Return appropriate status code
         status_code = 200 if health_status["status"] == "healthy" else 503
         return JsonResponse(health_status, status=status_code)
-

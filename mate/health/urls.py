@@ -9,4 +9,3 @@ urlpatterns = [
     path("", HealthCheckView.as_view(), name="health"),
     path("detailed/", DetailedHealthCheckView.as_view(), name="health_detailed"),
 ]
-
