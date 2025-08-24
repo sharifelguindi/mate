@@ -41,10 +41,14 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 # CACHES
 # ------------------------------------------------------------------------------
 # ElastiCache Redis is HIPAA-compliant when encryption is enabled
-# Build connection pool kwargs conditionally
+# Build connection pool kwargs conditionally based on SSL usage
 CONNECTION_POOL_KWARGS = {}
 if REDIS_URL.startswith("rediss://"):
-    CONNECTION_POOL_KWARGS["ssl_cert_reqs"] = "required"
+    # For SSL connections to ElastiCache
+    CONNECTION_POOL_KWARGS = {
+        "ssl_cert_reqs": None,  # ElastiCache doesn't require client certs
+        "ssl_check_hostname": False,  # ElastiCache uses self-signed certs
+    }
 
 CACHES = {
     "default": {

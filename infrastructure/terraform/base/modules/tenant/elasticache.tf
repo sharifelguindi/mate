@@ -61,7 +61,7 @@ resource "aws_secretsmanager_secret_version" "redis" {
     endpoint          = aws_elasticache_replication_group.tenant.primary_endpoint_address
     port              = 6379
     auth_token        = random_password.redis_auth.result
-    connection_string = "redis://:${random_password.redis_auth.result}@${aws_elasticache_replication_group.tenant.primary_endpoint_address}:6379"
+    connection_string = "rediss://:${random_password.redis_auth.result}@${aws_elasticache_replication_group.tenant.primary_endpoint_address}:6379"
   })
 }
 
