@@ -99,9 +99,6 @@ mate/
 │   ├── users/             # User authentication
 │   └── provisioning/      # Tenant provisioning
 ├── frontend/              # Vite/React frontend
-├── scripts/               # Deployment scripts
-│   ├── deploy.sh          # Main deployment script
-│   └── provision-tenant.sh# Tenant provisioning
 ├── compose/               # Docker configurations
 ├── documentation/         # Deployment & operations docs
 │   └── aws/              # AWS-specific guides
@@ -547,11 +544,8 @@ When deployed on AWS, MATE provides:
 
 ### Tenant Management
 ```bash
-# Provision new tenant
-./scripts/provision-tenant.sh
-
-# Deploy updates
-./scripts/deploy.sh tenant hospital-a
+# Deploy updates are now managed through GitHub Actions and Terraform
+# See infrastructure/terraform/ for details
 
 # Scale services
 terraform apply -var-file="tenants/hospital-a.tfvars"

@@ -250,3 +250,60 @@ deploy-help:
     @echo "  dev      - Development environment (default)"
     @echo "  staging  - Staging/testing environment"
     @echo "  main     - Production environment"
+
+# gh-cleanup: Clean up old GitHub Actions runs
+gh-cleanup:
+    @echo "🧹 GitHub Actions Cleanup"
+    @echo "========================="
+    @echo ""
+    @echo "1) Delete failed runs"
+    @echo "2) Delete cancelled runs"
+    @echo "3) Delete runs older than 30 days"
+    @echo "4) Delete runs older than 7 days"
+    @echo "5) Show statistics only"
+    @echo ""
+    @read -p "Enter your choice (1-5): " choice; \
+    case $$choice in \
+        1) \
+            echo "Deleting failed runs..."; \
+            gh run list --limit 100 --json databaseId,conclusion | \
+            jq -r '.[] | select(.conclusion == "failure") | .databaseId' | \
+            xargs -I {} gh run delete {} && echo "✅ Failed runs deleted" || echo "No failed runs found"; \
+            ;; \
+        2) \
+            echo "Deleting cancelled runs..."; \
+            gh run list --limit 100 --json databaseId,conclusion | \
+            jq -r '.[] | select(.conclusion == "cancelled") | .databaseId' | \
+            xargs -I {} gh run delete {} && echo "✅ Cancelled runs deleted" || echo "No cancelled runs found"; \
+            ;; \
+        3) \
+            echo "Deleting runs older than 30 days..."; \
+            cutoff=$$(date -v-30d +%Y-%m-%d 2>/dev/null || date -d "30 days ago" +%Y-%m-%d); \
+            gh run list --limit 200 --json databaseId,createdAt | \
+            jq -r ".[] | select(.createdAt < \"$$cutoff\") | .databaseId" | \
+            xargs -I {} gh run delete {} && echo "✅ Old runs deleted" || echo "No old runs found"; \
+            ;; \
+        4) \
+            echo "Deleting runs older than 7 days..."; \
+            cutoff=$$(date -v-7d +%Y-%m-%d 2>/dev/null || date -d "7 days ago" +%Y-%m-%d); \
+            gh run list --limit 200 --json databaseId,createdAt | \
+            jq -r ".[] | select(.createdAt < \"$$cutoff\") | .databaseId" | \
+            xargs -I {} gh run delete {} && echo "✅ Old runs deleted" || echo "No old runs found"; \
+            ;; \
+        5) \
+            echo "GitHub Actions Statistics:"; \
+            echo ""; \
+            total=$$(gh run list --limit 200 --json databaseId | jq '. | length'); \
+            successful=$$(gh run list --limit 200 --json conclusion | jq '[.[] | select(.conclusion == "success")] | length'); \
+            failed=$$(gh run list --limit 200 --json conclusion | jq '[.[] | select(.conclusion == "failure")] | length'); \
+            cancelled=$$(gh run list --limit 200 --json conclusion | jq '[.[] | select(.conclusion == "cancelled")] | length'); \
+            echo "Total runs (last 200): $$total"; \
+            echo "✅ Successful: $$successful"; \
+            echo "❌ Failed: $$failed"; \
+            echo "⚠️  Cancelled: $$cancelled"; \
+            ;; \
+        *) \
+            echo "Invalid choice!"; \
+            exit 1; \
+            ;; \
+    esac

@@ -12,6 +12,8 @@ from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
+    # Health check endpoints (no auth required for monitoring)
+    path("health/", include("mate.health.urls")),
     path(
         "",
         login_required(TemplateView.as_view(template_name="pages/home.html")),
