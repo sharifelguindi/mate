@@ -98,9 +98,9 @@ class PasswordPolicyTests(TestCase):
             # In production, this should fail validation
             # For now, just verify it's hashed (any Django hash format)
             assert any(
-            user.password.startswith(prefix)
-            for prefix in ["pbkdf2_sha256$", "argon2", "bcrypt", "md5$", "sha1$"]
-        ), f"Password should be hashed, got: {user.password[:20]}..."
+                user.password.startswith(prefix)
+                for prefix in ["pbkdf2_sha256$", "argon2", "bcrypt", "md5$", "sha1$"]
+            ), f"Password should be hashed, got: {user.password[:20]}..."
 
         # Test strong password
         strong_password = "MyS3cur3P@ssw0rd!"  # noqa: S105

@@ -1,73 +1,131 @@
-{% extends "base.html" %}
+{% load static i18n django_vite %}
 
-{% load i18n %}
-{% load crispy_forms_tags %}
-
-{% block title %}
-  {% trans "Sign In" %}
-{% endblock title %}
-{% block content %}
-  <div class="container">
-    <div class="row">
-      <div class="col-md-6 offset-md-3">
-        <h1>{% trans "Sign In" %}</h1>
-        <p>
-          {% blocktrans %}If you have not created an account yet, then please
-                <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}
-        </p>
-        <form method="post" action="{% url 'account_login' %}" class="login">
-          {% csrf_token %}
-          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-          <!-- Username/Email field -->
-          <div class="mb-3">
-            <label for="id_login" class="form-label">{% trans "Username" %}</label>
-            <input type="text"
-                   name="login"
-                   id="id_login"
-                   class="form-control{% if form.login.errors %} is-invalid{% endif %}"
-                   placeholder="{% trans 'Username' %}"
-                   autocomplete="username"
-                   maxlength="150"
-                   required
-                   autofocus
-                   value="{{ form.login.value|default:'' }}" />
-            {% if form.login.errors %}<div class="invalid-feedback">{{ form.login.errors.0 }}</div>{% endif %}
+<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}"
+      x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
+      :class="{ 'dark-mode': darkMode }">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>MATE - Sign In</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+          content="Mentored AI Transformer Environment - Sign In" />
+    <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}" />
+    <!-- Alpine.js for interactivity -->
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Vite HMR client for development -->
+    {% vite_hmr_client %}
+    <!-- Load login-specific assets through Vite -->
+    {% vite_asset 'login.js' %}
+  </head>
+  <body class="login-page">
+    <!-- Theme Toggle -->
+    <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
+            type="button"
+            class="theme-toggle"
+            aria-label="Toggle dark mode">
+      <svg x-show="!darkMode"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2"
+           viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+      <svg x-show="darkMode"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2"
+           viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    </button>
+    <div class="login-container">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <div class="logo-wrapper">
+          <div class="logo-box">
+            <span class="logo-letter">m</span>
           </div>
-          <!-- Password field -->
-          <div class="mb-3">
-            <label for="id_password" class="form-label">{% trans "Password" %}</label>
-            <input type="password"
-                   name="password"
-                   id="id_password"
-                   class="form-control{% if form.password.errors %} is-invalid{% endif %}"
-                   placeholder="{% trans 'Password' %}"
-                   autocomplete="current-password"
-                   required />
-            {% if form.password.errors %}<div class="invalid-feedback">{{ form.password.errors.0 }}</div>{% endif %}
-          </div>
-          <!-- Remember me checkbox -->
-          {% if form.remember %}
-            <div class="mb-3 form-check">
-              <input type="checkbox"
-                     name="remember"
-                     id="id_remember"
-                     class="form-check-input"
-                     {% if form.remember.value %}checked{% endif %} />
-              <label class="form-check-label" for="id_remember">{% trans "Remember Me" %}</label>
+          <span class="logo-text">mate</span>
+        </div>
+      </div>
+      <!-- Login Card -->
+      <div class="login-card">
+        <div class="card-content">
+          <form method="post" action="{% url 'account_login' %}" id="loginForm">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert">
+                <svg class="alert-icon"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="alert-description">{{ form.non_field_errors.0 }}</span>
+              </div>
+            {% endif %}
+            <div class="form-group">
+              <label for="id_login" class="form-label">Username</label>
+              <input type="text"
+                     name="login"
+                     id="id_login"
+                     class="form-input{% if form.login.errors %} is-invalid{% endif %}"
+                     placeholder="Enter username"
+                     autocomplete="username"
+                     maxlength="150"
+                     required
+                     autofocus
+                     value="{{ form.login.value|default:'' }}" />
+              {% if form.login.errors %}<div class="invalid-feedback">{{ form.login.errors.0 }}</div>{% endif %}
             </div>
-          {% endif %}
-          {% if redirect_field_value %}
-            <input type="hidden"
-                   name="{{ redirect_field_name }}"
-                   id="id_{{ redirect_field_name }}"
-                   value="{{ redirect_field_value }}" />
-          {% endif %}
-          <div class="d-grid gap-2">
-            <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
-            <a class="btn btn-link" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
-          </div>
-        </form>
+            <div class="form-group">
+              <label for="id_password" class="form-label">Password</label>
+              <input type="password"
+                     name="password"
+                     id="id_password"
+                     class="form-input{% if form.password.errors %} is-invalid{% endif %}"
+                     placeholder="Enter password"
+                     autocomplete="current-password"
+                     required />
+              {% if form.password.errors %}<div class="invalid-feedback">{{ form.password.errors.0 }}</div>{% endif %}
+            </div>
+            {% if form.remember %}
+              <div class="checkbox-group">
+                <input type="checkbox"
+                       name="remember"
+                       id="id_remember"
+                       class="checkbox-input"
+                       {% if form.remember.value %}checked{% endif %} />
+                <label for="id_remember" class="checkbox-label">Remember me</label>
+              </div>
+            {% endif %}
+            {% if redirect_field_value %}
+              <input type="hidden"
+                     name="{{ redirect_field_name }}"
+                     value="{{ redirect_field_value }}" />
+            {% endif %}
+            <button class="btn-primary" type="submit">
+              <span class="btn-text">Sign In</span>
+              <span class="spinner"></span>
+            </button>
+          </form>
+        </div>
+        <div class="card-footer">
+          <div class="admin-notice">For account access, please contact your system administrator</div>
+        </div>
       </div>
     </div>
-  </div>
-{% endblock content %}
+  </body>
+</html>

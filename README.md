@@ -310,6 +310,121 @@ just prod-down
 
 **Note**: The production environment uses Traefik as a reverse proxy and will run on ports 80/443. Make sure these ports are available.
 
+## 📦 Deployment Best Practices
+
+### Pre-Deployment Checklist
+
+Before deploying any code, always run the pre-deployment checks:
+
+```bash
+# Run all pre-deployment checks (tests, linting, type checking)
+just pre-deploy
+```
+
+This command will:
+1. ✅ Run pre-commit hooks
+2. ✅ Run mypy type checking
+3. ✅ Run ruff linting
+4. ✅ Run all tests
+5. ✅ Check for uncommitted changes
+6. ✅ Fetch latest from origin
+
+### Deployment Commands
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) to maintain a clean, readable git history. The deployment system enforces this automatically.
+
+#### Basic Deployment Syntax
+
+```bash
+just deploy <type> <message> [branch]
+```
+
+#### Commit Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New feature | `just deploy feat "add user authentication" dev` |
+| `fix` | Bug fix | `just deploy fix "resolve login issue" main` |
+| `docs` | Documentation changes | `just deploy docs "update API documentation"` |
+| `style` | Code style/formatting (no logic change) | `just deploy style "fix indentation"` |
+| `refactor` | Code restructuring (no behavior change) | `just deploy refactor "extract user service"` |
+| `test` | Adding or changing tests | `just deploy test "add auth unit tests" staging` |
+| `chore` | Maintenance, dependencies, etc | `just deploy chore "update dependencies"` |
+| `perf` | Performance improvements | `just deploy perf "optimize database queries"` |
+| `ci` | CI/CD configuration changes | `just deploy ci "add deployment workflow"` |
+| `build` | Build system or dependencies | `just deploy build "update webpack config"` |
+| `revert` | Revert a previous commit | `just deploy revert "undo last commit"` |
+
+#### Branch Targets
+
+- `dev` (default) - Development environment
+- `staging` - Staging/testing environment
+- `main` - Production environment
+
+#### Deployment Examples
+
+```bash
+# Feature development (defaults to dev branch)
+just deploy feat "add shopping cart"
+
+# Bug fix to production
+just deploy fix "critical payment bug" main
+
+# Add tests to staging
+just deploy test "integration tests for checkout" staging
+
+# Update documentation
+just deploy docs "add API endpoint docs"
+
+# Maintenance tasks
+just deploy chore "update Python dependencies"
+
+# Performance improvements
+just deploy perf "optimize image loading" main
+```
+
+### Deployment Workflow
+
+1. **Make your changes** and test locally
+2. **Run pre-deployment checks**: `just pre-deploy`
+3. **Deploy with appropriate type**: `just deploy feat "your feature description"`
+4. **Monitor deployment**: Check GitHub Actions for CI/CD progress
+
+### Commit Message Guidelines
+
+- Use **present tense** ("add feature" not "added feature")
+- Use **imperative mood** ("move cursor to..." not "moves cursor to...")
+- Keep first line under 50 characters
+- Reference issues/tickets when applicable
+
+#### Good Examples
+```bash
+just deploy feat "add OAuth2 authentication flow"
+just deploy fix "prevent race condition in payment processing"
+just deploy test "add coverage for user registration"
+just deploy docs "clarify API rate limiting behavior"
+```
+
+#### Bad Examples
+```bash
+# Too vague
+just deploy feat "update code"
+
+# Past tense
+just deploy fix "fixed the bug"
+
+# Too long
+just deploy feat "add new feature that allows users to login with social media accounts and also reset their passwords"
+```
+
+### Help Command
+
+To see all deployment options and examples:
+
+```bash
+just deploy-help
+```
+
 ## Troubleshooting
 
 ### Common Issues

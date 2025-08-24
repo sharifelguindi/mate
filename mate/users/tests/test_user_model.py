@@ -9,7 +9,6 @@ This module tests all aspects of the User model including:
 - String representations
 """
 
-
 from datetime import datetime
 
 import pytest
@@ -357,7 +356,6 @@ class UserModelQuerySetTests(TestCase):
         )
         assert staff.count() == self.NUM_ADMIN_USERS
         assert non_staff.count() == expected_non_staff
-
 
     def test_exclude_system_users(self):
         """Test excluding system/service accounts."""

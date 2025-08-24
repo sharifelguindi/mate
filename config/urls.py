@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include
 from django.urls import path
@@ -11,15 +12,19 @@ from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path(
+        "",
+        login_required(TemplateView.as_view(template_name="pages/home.html")),
+        name="home",
+    ),
     path(
         "about/",
-        TemplateView.as_view(template_name="pages/about.html"),
+        login_required(TemplateView.as_view(template_name="pages/about.html")),
         name="about",
     ),
     path(
         "vite-test/",
-        TemplateView.as_view(template_name="pages/vite_test.html"),
+        login_required(TemplateView.as_view(template_name="pages/vite_test.html")),
         name="vite_test",
     ),
     # Django Admin, use {% url 'admin:index' %}

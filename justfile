@@ -162,52 +162,38 @@ pre-deploy:
     @echo ""
     @echo "Ready for deployment. Run 'just deploy' to commit and push."
 
-# deploy: Commit changes and deploy to production (interactive)
-deploy:
-    @echo "🚀 Starting production deployment..."
+# deploy: Deploy with conventional commit type, message, and optional branch
+deploy type message branch="dev":
+    @echo "🚀 Starting deployment..."
     @echo ""
+    @# Validate commit type
+    @if ! echo "{{type}}" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)$"; then \
+        echo "❌ Invalid commit type: {{type}}"; \
+        echo ""; \
+        echo "Valid types:"; \
+        echo "  feat     - New feature"; \
+        echo "  fix      - Bug fix"; \
+        echo "  docs     - Documentation changes"; \
+        echo "  style    - Code style changes (formatting, etc)"; \
+        echo "  refactor - Code refactoring"; \
+        echo "  test     - Adding or changing tests"; \
+        echo "  chore    - Maintenance tasks"; \
+        echo "  perf     - Performance improvements"; \
+        echo "  ci       - CI/CD changes"; \
+        echo "  build    - Build system changes"; \
+        echo "  revert   - Revert a previous commit"; \
+        echo ""; \
+        echo "Example: just deploy feat 'add user login' dev"; \
+        exit 1; \
+    fi
     @# Check if there are changes to commit
     @if git status --porcelain | grep -q .; then \
         echo "📝 Uncommitted changes detected:"; \
         echo ""; \
         git status --short; \
         echo ""; \
-        read -p "Enter commit message (or press Enter for default): " msg; \
-        if [ -z "$$msg" ]; then \
-            msg="chore: Production deployment $$(date +%Y-%m-%d)"; \
-        fi; \
-        git add -A; \
-        git commit -m "$$msg" || (echo "❌ Commit failed!" && exit 1); \
-        echo "✅ Changes committed"; \
-    else \
-        echo "✅ No uncommitted changes"; \
-    fi
-    @echo ""
-    @read -p "Enter target branch (default: main): " branch; \
-    if [ -z "$$branch" ]; then \
-        branch="main"; \
-    fi; \
-    echo "Pushing to $$branch branch..."; \
-    git push origin HEAD:$$branch || (echo "❌ Push failed!" && exit 1)
-    @echo ""
-    @echo "✅ Deployment initiated! Check GitHub Actions for progress:"
-    @echo "   https://github.com/your-org/mate/actions"
-    @echo ""
-    @echo "📊 Monitor deployment:"
-    @echo "   aws ecs list-tasks --cluster mate-cluster --service-name mate-demo-django"
-
-# deploy-force: Deploy with specific branch and message (non-interactive)
-deploy-force branch="main" message="":
-    @echo "🚀 Starting production deployment to {{branch}}..."
-    @echo ""
-    @# Check if there are changes to commit
-    @if git status --porcelain | grep -q .; then \
-        if [ -z "{{message}}" ]; then \
-            msg="chore: Production deployment $$(date +%Y-%m-%d)"; \
-        else \
-            msg="{{message}}"; \
-        fi; \
-        echo "📝 Committing changes: $$msg"; \
+        msg="{{type}}: {{message}}"; \
+        echo "📝 Committing: $$msg"; \
         git add -A; \
         git commit -m "$$msg" || (echo "❌ Commit failed!" && exit 1); \
         echo "✅ Changes committed"; \
@@ -218,8 +204,50 @@ deploy-force branch="main" message="":
     @echo "Pushing to {{branch}} branch..."
     @git push origin HEAD:{{branch}} || (echo "❌ Push failed!" && exit 1)
     @echo ""
-    @echo "✅ Deployment initiated! Check GitHub Actions for progress:"
-    @echo "   https://github.com/your-org/mate/actions"
+    @echo "✅ Deployment to {{branch}} completed!"
+    @# Show environment info based on branch
+    @if [ "{{branch}}" = "main" ]; then \
+        echo "🚀 Production deployment - {{type}}: {{message}}"; \
+    elif [ "{{branch}}" = "staging" ]; then \
+        echo "🧪 Staging deployment - {{type}}: {{message}}"; \
+    else \
+        echo "🔧 Development deployment - {{type}}: {{message}}"; \
+    fi
     @echo ""
-    @echo "📊 Monitor deployment:"
-    @echo "   aws ecs list-tasks --cluster mate-cluster --service-name mate-demo-django"
+    @echo "📊 Check GitHub Actions for progress:"
+    @echo "   https://github.com/your-org/mate/actions"
+
+# deploy-help: Show deployment usage and examples
+deploy-help:
+    @echo "📚 Deployment Commands with Conventional Commits"
+    @echo ""
+    @echo "Usage:"
+    @echo "  just deploy <type> <message> [branch]"
+    @echo ""
+    @echo "Examples:"
+    @echo "  just deploy feat 'add user authentication' dev"
+    @echo "  just deploy fix 'resolve login bug' main"
+    @echo "  just deploy test 'add unit tests for auth' staging"
+    @echo "  just deploy docs 'update API documentation'"
+    @echo "  just deploy chore 'update dependencies'"
+    @echo "  just deploy style 'fix formatting issues'"
+    @echo "  just deploy refactor 'extract user service'"
+    @echo "  just deploy perf 'optimize database queries' main"
+    @echo ""
+    @echo "Commit Types:"
+    @echo "  feat     - New feature"
+    @echo "  fix      - Bug fix"
+    @echo "  docs     - Documentation only changes"
+    @echo "  style    - Code style/formatting (no logic change)"
+    @echo "  refactor - Code restructuring (no behavior change)"
+    @echo "  test     - Adding or changing tests"
+    @echo "  chore    - Maintenance, dependencies, etc"
+    @echo "  perf     - Performance improvements"
+    @echo "  ci       - CI/CD configuration changes"
+    @echo "  build    - Build system or dependencies"
+    @echo "  revert   - Revert a previous commit"
+    @echo ""
+    @echo "Branches:"
+    @echo "  dev      - Development environment (default)"
+    @echo "  staging  - Staging/testing environment"
+    @echo "  main     - Production environment"
